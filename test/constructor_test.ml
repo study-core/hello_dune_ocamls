@@ -80,7 +80,7 @@ type type_B = [`Hoge | `Fuga | `Piyo];;
 
 (* `I'm Hoge type_B is `Hoge, `Fuga or more types *)
 (* val b : type_B = `Hoge *)
-let b:type_B = `Hoge;;
+let b : type_B = `Hoge;;
 
 (* 
   Error: This expression has type type_B but an expression was expected of type
