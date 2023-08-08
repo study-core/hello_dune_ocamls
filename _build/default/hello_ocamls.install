@@ -6,3 +6,6 @@ lib: [
 bin: [
   "_build/install/default/bin/hello_ocamls"
 ]
+doc: [
+  "_build/install/default/doc/hello_ocamls/README.md"
+]
