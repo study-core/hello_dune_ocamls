@@ -94,7 +94,7 @@ done
 
 let quit_loop = ref false in    (* 引用 *)
 
-while not !quit_loop do         (* 解引用  !是 OCaml 的解引用 *)
+while not !quit_loop do         (* 【解引用  ! 是 OCaml 的解引用】 *)
 
   print_string "Have you had enough yet? (y/n) ";
   let str = read_line () in
