@@ -12,14 +12,26 @@ module Exn = Dune__exe__Exn
 (** @canonical Dune__exe.Extension_test *)
 module Extension_test = Dune__exe__Extension_test
 
+(** @canonical Dune__exe.Flow *)
+module Flow = Dune__exe__Flow
+
 (** @canonical Dune__exe.Functor_test *)
 module Functor_test = Dune__exe__Functor_test
 
 (** @canonical Dune__exe.Module_test *)
 module Module_test = Dune__exe__Module_test
 
+(** @canonical Dune__exe.Monad *)
+module Monad = Dune__exe__Monad
+
 (** @canonical Dune__exe.Object_test *)
 module Object_test = Dune__exe__Object_test
+
+(** @canonical Dune__exe.Pattern_match_test *)
+module Pattern_match_test = Dune__exe__Pattern_match_test
+
+(** @canonical Dune__exe.Pointer *)
+module Pointer = Dune__exe__Pointer
 
 (** @canonical Dune__exe.Record *)
 module Record = Dune__exe__Record

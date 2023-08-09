@@ -48,16 +48,12 @@ raise Hoge;;
 raise (Fuga "fuga!");;
 
 
-(* exception Hoge *)
-exception Hoge;;
-
-
 (* 
     exn 类型列表
     val exnlist : exn list = [Not_found; Hoge; Invalid_argument "fuga"]
 *)
 let exnlist = [Not_found; Hoge; (Invalid_argument "fuga")];;
-
+exnlist;;
 
 (* 
     接收exn类型的函数
