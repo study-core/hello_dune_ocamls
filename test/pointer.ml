@@ -17,11 +17,11 @@ type 'a pointer = Null | Pointer of 'a ref;;
 定义 指针 赋值和解引用 函数 示例：   
 *)
 
-# let ( !^ ) = function    (* 解引用函数定义：  val ( !^ ) : 'a pointer -> 'a = <fun> *)
+let ( !^ ) = function    (* 解引用函数定义：  val ( !^ ) : 'a pointer -> 'a = <fun> *)
     | Null -> invalid_arg "Attempt to dereference the null pointer"
     | Pointer r -> !r;;
 
-# let ( ^:= ) p v =  (* 赋值函数定义： val ( ^:= ) : 'a pointer -> 'a -> unit = <fun> *)
+let ( ^:= ) p v =  (* 赋值函数定义： val ( ^:= ) : 'a pointer -> 'a -> unit = <fun> *)
     match p with
     | Null -> invalid_arg "Attempt to assign the null pointer"
     | Pointer r -> r := v;;
@@ -34,3 +34,13 @@ let p = new_pointer 0;;  (* val p : int pointer = Pointer {contents = 0} *)
 
 p ^:= 1;;  (* 赋值 1,  - : unit = () *)
 !^p;;  (* 解引用,  - : int = 1 *)
+
+
+(* val r : int ref = {contents = 0} *)
+let r = ref 0;;
+
+(* 赋值给引用 - : unit = () *)
+r := 100;;
+
+(* 解引用 - : int = 100 *)
+!r;;
