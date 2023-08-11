@@ -15,6 +15,9 @@ module Extension_test = Dune__exe__Extension_test
 (** @canonical Dune__exe.Flow *)
 module Flow = Dune__exe__Flow
 
+(** @canonical Dune__exe.Func *)
+module Func = Dune__exe__Func
+
 (** @canonical Dune__exe.Functor_test *)
 module Functor_test = Dune__exe__Functor_test
 

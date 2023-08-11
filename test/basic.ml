@@ -411,3 +411,31 @@ let f : [> t ] -> int = function  (* t is subtype of the argument *)
    
 *)
 
+
+
+
+(* 使用  _  代替泛型 *)
+let give_me_a_three _ = 3;;  (* val give_me_a_three : 'a -> int = <fun> *)
+
+
+(* 
+give_me_a_three (1 / 0);;
+Exception: Division_by_zero.   
+*)
+
+
+(* 
+######################################################################################################################################################   
+惰性求值
+######################################################################################################################################################
+*)
+
+
+let lazy_expr = lazy (1 / 0);;  (* val lazy_expr : int lazy_t = <lazy> *)
+
+
+give_me_a_three lazy_expr;;  (* - : int = 3 *)
+
+(* 强行求惰性表达式的值时，用 Lazy.force 函数 *)
+
+Lazy.force lazy_expr;;   (* Exception: Division_by_zero. *)
