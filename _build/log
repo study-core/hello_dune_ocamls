@@ -3,7 +3,7 @@
 # Shared cache: disabled
 # Workspace root: /home/vrf/ocaml-workspace/hello_ocamls
 # Auto-detected concurrency: 4
-$ /home/vrf/.opam/4.14.0/bin/ocamlc.opt -config > /tmp/dune_c6a003_output
+$ /home/vrf/.opam/4.14.0/bin/ocamlc.opt -config > /tmp/dune_f5e46b_output
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
