@@ -31,7 +31,8 @@
 (* -------------------------------- 【不】具备返回值的写法  -------------------------------- *)
 
 (* 
-    签名定义
+    签名定义  (也是 命名模块类型 (模块类型定义))
+    (查看 module_test.ml 文件对比)
     module type ELEMENT = sig type t val compare : t -> t -> int end
 *)
 module type ELEMENT = sig
