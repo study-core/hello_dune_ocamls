@@ -21,6 +21,9 @@ module Func = Dune__exe__Func
 (** @canonical Dune__exe.Functor_test *)
 module Functor_test = Dune__exe__Functor_test
 
+(** @canonical Dune__exe.List_test *)
+module List_test = Dune__exe__List_test
+
 (** @canonical Dune__exe.Module_test *)
 module Module_test = Dune__exe__Module_test
 
