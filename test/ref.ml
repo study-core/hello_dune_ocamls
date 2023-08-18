@@ -15,7 +15,7 @@ let () = print_string (!h ^ !f ^ "\n");;
 
 (* 
   重写 引用 h  (这里用 f 所引用的值重写它)
-  - : unit = ()
+  - : unit = ()  
 *)
 h := !f;;
 let () = print_string (!h ^ !f ^ "\n");;
