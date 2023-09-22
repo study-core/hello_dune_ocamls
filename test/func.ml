@@ -80,7 +80,7 @@ let fuga x = fun y -> fun z -> x + y + z;;
 
 是 
 
-`let f = fun 参数 = 表达式 `
+`let f = fun 参数 -> 表达式 `
 
 的语法糖
 
