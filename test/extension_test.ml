@@ -192,7 +192,7 @@ Error: This expression has type 'a option
 val open_application : ?width:int -> ?height:int -> unit -> unit -> window = <fun>
 *)
 let open_application ?width ?height () =
-  open_window ~title:"My Application" ?width ?height;;
+  open_window ~title:"My Application" ?width ?height;;  (* 在函数调用中编写 ?width 是编写 ~width:(unwrap width) 的简写，其中 unwrap 是一个删除 width 周围的“ option 包装器”的函数 *)
 
 
 

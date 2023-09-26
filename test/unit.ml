@@ -16,4 +16,4 @@ const ();;
     修改字符串 "Test" 下标 1 的字符为 C
     得到 "TCst"
 *)
-let () = Bytes.set "Test" 1 'C';;
+let () = Bytes.set (Bytes.of_string "Test") 1 'C';;
