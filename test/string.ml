@@ -6,7 +6,7 @@ let s = "life";;
 (* 
     - : unit = ()   
 *)
-s.[2] <- 'v';;
+s.[2] <- 'v';;   (* 该语法已从 OCaml 5.0 中完全删除。原因是 s.[i] <- c 是 String.set 的别名，String.set 也已被删除 *)
 
 
 (* 
@@ -22,5 +22,9 @@ s;;
     - : string = "Hoge"
 *)
 let f2 = "hoge";;
-Bytes.set f2 0 'H';;
+Bytes.set (Bytes.of_string  f2) 0 'H';;
 f2;;
+
+
+
+

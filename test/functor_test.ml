@@ -114,7 +114,7 @@ end
 
     使用  functor 关键字时的 写法
 
-    module MakeSet : functor (Element : ELEMENT) ->
+    module MakeSet = functor (Element : ELEMENT) ->
       sig
         type elt = Element.t
         type t = elt list
@@ -148,7 +148,7 @@ module MakeSet (Element : ELEMENT) =
                                 match Element.compare elt x with
                                 (* 如果 等于首元素， 则不做 add 操作 *)
                                 | 0 -> s
-                                (* 如果 不等于 首元素 且 < 0 则加到 list 尾部 *)
+                                (* 如果 不等于 首元素 且 < 0 则加到 list 头部 *)
                                 | r when r < 0 -> elt :: s
                                 (* 否则，对比 list 下一个 元素 *)
                                 | _ -> x :: (add elt rest)
@@ -298,10 +298,10 @@ let s1 = add "a" (add "b" empty) and s2 = add "c" (add "d" empty);;
 
 (* 
 ######################################################################################################################################################
-显示指定某个 sig 中的字段值并生成新字段      
+显式 指定某个 sig 中的字段值并生成新字段      
 ######################################################################################################################################################
 
-module type 新类型 = 就类型 with type elt = 被指定的类型;;   如：   
+module type 新类型 = 旧类型 with type elt = 被指定的类型;;   如：   
 
 module type E2 = E1 with type elt = int;;
 

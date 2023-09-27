@@ -30,3 +30,9 @@ let () = print_string ((string_of_int !r1) ^ (string_of_int !r2) ^ "\n");;
 
 
 
+(* 
+   
+OCaml 中的程序没有唯一的 main 函数。当评估 OCaml 程序时。
+我们可以以 let () = 开头的声明扮演 main 函数的角色，启动处理。
+
+*)

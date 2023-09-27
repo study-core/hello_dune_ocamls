@@ -212,3 +212,16 @@ Error: syntax error
 
 Exception: Invalid_argument "equal: functional value".
 *)
+
+
+
+
+(* 自定义 函数别名 *)
+
+let ( .%[]<- ) = Bytes.set;;
+
+
+
+let str = "kally";;
+
+(Bytes.of_string str).%[4] <- 'a';
