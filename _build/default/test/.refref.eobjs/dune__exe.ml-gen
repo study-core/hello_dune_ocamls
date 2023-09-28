@@ -21,6 +21,9 @@ module Func = Dune__exe__Func
 (** @canonical Dune__exe.Functor_test *)
 module Functor_test = Dune__exe__Functor_test
 
+(** @canonical Dune__exe.GADT *)
+module GADT = Dune__exe__GADT
+
 (** @canonical Dune__exe.List_test *)
 module List_test = Dune__exe__List_test
 
@@ -50,6 +53,9 @@ module Refref = Dune__exe__Refref
 
 (** @canonical Dune__exe.String *)
 module String = Dune__exe__String
+
+(** @canonical Dune__exe.Test1 *)
+module Test1 = Dune__exe__Test1
 
 (** @canonical Dune__exe.Unit *)
 module Unit = Dune__exe__Unit
