@@ -346,3 +346,34 @@ let extended_color_to_int : extended_color -> int = function
       ###################################################################
       ###################################################################
 *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* 
+OCaml 的变体类型是名义上的，因此 complete 和 incomplete 是不同的类型   
+*)
+
+(* incomplete 和 complete 是不同类型 *)
+type incomplete = Z
+type complete = Z
+let i = (Z : incomplete) and c = (Z : complete);;
+
+(* 
+
+Error: This expression has type complete
+       but an expression was expected of type incomplete
+
+*)
+[i; c];;
+
+

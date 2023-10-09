@@ -61,6 +61,9 @@ If 是一个示例，其中类型参数取决于标记的参数，特别是 If �
    
 下跨线 _ 其实就是  类似  类型参数 'a 之类的， 只是用了 _ 后表示没有 去明确 类型参数 了， [泛型中的泛型 ??]
 
+
+即表示    _ value 可能是  int value  也可能是  bool value
+
 ************************************************************************************************)
 
 (* GADT 形式的  value 类型定义 *)
@@ -652,3 +655,478 @@ OCaml 中的一个常见习惯是使用组件组合函数或组合器的集合�
 
 
 *)
+
+module type Pipeline = sig
+
+  (* 
+  类型 ('a,'b) t 表示一个管道，它消耗 'a 类型的值并发出 'b 类型的值。
+  运算符 @> 允许您通过提供一个预先添加到现有管道的函数来向管道添加步骤，
+  而 empty 则为您提供一个空管道，可用于为管道提供种子 
+  *)
+  type ('input,'output) t
+
+  val ( @> ) : ('a -> 'b) -> ('b,'c) t -> ('a,'c) t
+  val empty : ('a,'a) t
+end
+
+
+(* 
+使用  函子   
+
+module Example_pipeline :
+  functor (Pipeline : Pipeline) ->
+    sig val sum_file_sizes : (unit, int) Pipeline.t end
+*)
+module Example_pipeline (Pipeline : Pipeline) = struct
+  open Pipeline
+  let sum_file_sizes =
+    (fun () -> Sys_unix.ls_dir ".")
+    @> List.filter ~f:Sys_unix.is_file_exn
+    @> List.map ~f:(fun file_name -> (Core_unix.lstat file_name).st_size)
+    @> List.sum (module Int) ~f:Int64.to_int_exn
+    @> empty
+end;;
+
+
+(* 
+
+如果我们想要的只是一个能够简单执行的管道，我们可以将管道本身定义为一个简单的函数，将 @> 运算符定义为函数组合。然后执行管道只是函数应用程序
+
+*)
+
+module Basic_pipeline : sig
+  include Pipeline
+  val exec : ('a,'b) t -> 'a -> 'b
+end= struct
+ type ('input, 'output) t = 'input -> 'output
+
+ let empty = Fn.id
+
+ let ( @> ) f t input =
+   t (f input)
+
+ let exec t input = t input
+end
+
+
+(* 
+
+上述的写法不太好。
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+使用 GADT 实现 管道
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+
+使用 GADT 来抽象地表示我们想要的管道，然后在该表示之上构建我们想要的功能，而不是具体构建用于执行管道的机器
+
+*)
+type (_, _) pipeline =      (* 标签 pipeline 代表管道的两个构建块： Step 对应于 @> 运算符;    Empty 对应于 empty 管道 *)
+
+  | Step : ('a -> 'b) * ('b, 'c) pipeline -> ('a, 'c) pipeline
+  | Empty : ('a, 'a) pipeline
+
+
+
+(* 
+   
+函数 @>
+
+
+val ( @> ) : ('a -> 'b) -> ('b, 'c) pipeline -> ('a, 'c) pipeline = <fun>
+*)
+let ( @> ) f pipeline = Step (f, pipeline);;
+
+
+(* 
+   
+val empty : ('a, 'a) pipeline = Empty
+
+*)
+let empty = Empty;;
+
+
+(* 
+
+val exec : ('a, 'b) pipeline -> 'a -> 'b = <fun>
+
+*)
+let rec exec : type a b. (a, b) pipeline -> a -> b =
+  fun pipeline input ->
+   match pipeline with
+   | Empty -> input
+   | Step (f, tail) -> exec tail (f input);;
+ 
+
+
+(* 
+
+执行管道并生成一个配置文件，显示管道每个步骤花费的时间   
+
+val exec_with_profile : ('a, 'b) pipeline -> 'a -> 'b * Time_ns.Span.t list = <fun>
+
+*)
+let exec_with_profile pipeline input =
+  let rec loop
+      : type a b.
+        (a, b) pipeline -> a -> Time_ns.Span.t list -> b * Time_ns.Span.t list
+    =
+   fun pipeline input rev_profile ->
+    match pipeline with
+    | Empty -> input, rev_profile
+    | Step (f, tail) ->
+      let start = Time_ns.now () in
+      let output = f input in
+      let elapsed = Time_ns.diff (Time_ns.now ()) start in
+      loop tail output (elapsed :: rev_profile)
+  in
+  let output, rev_profile = loop pipeline input [] in
+  output, List.rev rev_profile;;
+
+
+
+
+
+
+
+(* 
+************************************************************************************************************************************************
+【四】 缩小  可能性
+************************************************************************************************************************************************
+
+
+缩小给定数据类型在不同情况下的可能状态集
+
+*)
+
+
+(* 
+   
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+
+非 GADT
+
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+我们可能会按如下方式对单个登录请求的状态进行建模
+
+*)
+
+(* 
+   
+User_name.t       代表文本名称 
+User_id.t         代表与用户关联的整数标识符
+Permissions.t     可以让您确定哪些 User_id.t 有权登录
+
+*)
+type logon_request =
+  { user_name : User_name.t
+  ; user_id : User_id.t option
+  ; permissions : Permissions.t option
+  }
+
+
+(* 
+
+测试 登录
+val authorized : logon_request -> (bool, string) result = <fun>   
+*)
+let authorized request =
+  match request.user_id, request.permissions with
+  | None, _ | _, None ->
+    Error "Can't check authorization: data incomplete"
+  | Some user_id, Some permissions ->
+    Ok (Permissions.check permissions user_id);;  
+
+
+(* 
+
+上面的代码对于像这样的简单情况来说效果很好。但在真实的系统中，您的代码可能会以多种方式变得更加复杂，例如，
+
+    1、 更多要管理的字段，包括更多可选字段
+    2、 更多依赖于这些可选字段的操作
+    3、 并行处理多个请求，每个请求可能处于不同的完成状态 
+
+*)
+
+
+(*   
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+
+ GADT     [未实现]
+
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+*)
+
+
+
+(* 
+*****************************************************************    
+完成敏感   的 [选项] 类型     complete-sensitive option type
+***************************************************************** 
+*)
+type incomplete = Incomplete
+type complete = Complete
+(* 
+
+【我们使用 Absent 和 Present 而不是 Some 或 None 来使 option 和 coption 一起使用时代码不那么混乱】
+
+
+
+这里没有明确使用 complete 。
+相反，我们所做的是确保只有 incomplete coption 可以是 Absent 。
+因此， coption 是 complete （因此不是 incomplete ）只能是 Present
+*)
+type (_, _) coption =    
+  | Absent : (_, incomplete) coption   (* Absent  => (_, incomplete) coption *)
+  | Present : 'a -> ('a, _) coption    (* Present('a)  => ('a, _) coption *)
+
+
+
+(* 
+
+示例：  从 coption 中获取值，如果找到 Absent 则返回默认值
+
+
+val get : default:'a -> ('a, incomplete) coption -> 'a = <fun>
+*)
+let get ~default o =
+  match o with
+  | Present x -> x
+  | Absent -> default;;
+
+  (* 此处推断出 incomplete 类型。如果我们将 coption 注释为 complete ，则代码将不再编译 *)
+
+let get ~default (o : (_,complete) coption) =
+  match o with
+  | Absent -> default  (* 由于 get 函数入参 o 限定了是   (_,complete) coption , 则 Absent 不符合， 因为它是 (_, incomplete) coption *)
+  | Present x -> x;;
+  
+  (* 
+  Error: This pattern matches values of type ('a, incomplete) coption
+       but a pattern was expected which matches values of type
+         ('a, complete) coption
+       Type incomplete is not compatible with type complete   
+  *)
+  
+  (*  下列两个函数是等价的  *)
+
+let get (o : (_,complete) coption) =
+  match o with
+  | Present x -> x;;
+
+let get (Present x : (_,complete) coption) = x;;    (* 构造子 Present x 实例化后的类型是(_,complete) coption *)
+  
+  
+
+
+(* 
+*****************************************************************    
+类型区别 和 抽象  
+***************************************************************** 
+*)
+
+(* 本质意义上  incomplete 和 complete 是不同类型的哦 *)
+type incomplete = Z
+type complete = Z
+
+(* 
+   
+如果我们用下列形式定义，则 
+
+
+容易忽视的问题是，我们通过接口公开这些类型的方式可能会导致 OCaml 无法跟踪相关类型的独特性
+*)
+
+type ('a, _) coption =
+  | Absent : (_, incomplete) coption
+  | Present : 'a -> ('a, _) coption
+
+let assume_complete (coption : (_,complete) coption) =
+  match coption with
+  | Present x -> x;;
+
+
+(* 
+
+所以，我们完全隐藏了 complete 和 incomplete 的定义， 如：
+
+将其定义在 模块 M 中
+
+*)
+
+module M : sig
+  type incomplete
+  type complete
+end = struct
+  type incomplete = Z
+  type complete = Z
+end
+include M
+
+type ('a, _) coption =
+  | Absent : (_, incomplete) coption
+  | Present : 'a -> ('a, _) coption
+
+
+
+(* 
+
+紧接着， 我们编写的 assume_complete 函数不再是详尽的
+
+
+val assume_complete : ('a, complete) coption -> 'a = <fun>
+*)
+let assume_complete (coption : (_,complete) coption) =
+  match coption with
+  | Present x -> x;;
+(* 
+
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Absent
+
+
+因为通过保留类型抽象，我们  完全隐藏了底层类型，使  【类型系统】 没有  证据表明类型是不同的
+*)
+
+
+(* 
+
+让我们看看如果我们公开这些类型的实现会发生什么
+
+*)
+module M : sig
+  type incomplete = Z   (* 在 [签名 定义] 这，直接 赋上 Z， 即表示  公开 *)
+  type complete = Z     (* 在 [签名 定义] 这，直接 赋上 Z， 即表示  公开 *)
+end = struct
+  type incomplete = Z
+  type complete = Z
+end
+include M
+
+type ('a, _) coption =
+  | Absent : (_, incomplete) coption
+  | Present : 'a -> ('a, _) coption
+
+let assume_complete (coption : (_,complete) coption) =
+  match coption with
+  | Present x -> x;;
+(* 
+
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Absent
+
+
+结果仍然不详尽 !!!!! 
+
+【结论】：当创建类型作为 GADT 类型参数的抽象标记时，应该选择使这些类型的独特性变得清晰的定义，并且应该在 mli 中公开这些定义
+*)
+
+
+
+
+
+(* 
+************************************************************************************************************************************************
+************************************************************************************************************************************************
+
+GADT 的局限性
+
+************************************************************************************************************************************************
+************************************************************************************************************************************************
+*)
+
+
+(* 
+*****************************************************************    
+【1】   GADT 不能很好地与 or 模式配合使用
+***************************************************************** 
+*)
+
+open Core
+module Source_kind = struct
+  type _ t =
+    | Filename : string t
+    | Host_and_port : Host_and_port.t t
+    | Raw_data : string t
+end
+
+let source_to_sexp (type a) (kind : a Source_kind.t) (source : a) =
+  match kind with
+  | Filename -> String.sexp_of_t source
+  | Host_and_port -> Host_and_port.sexp_of_t source
+  | Raw_data -> String.sexp_of_t source;;
+
+  (* 改写成 OR 模式 *)
+
+  let source_to_sexp (type a) (kind : a Source_kind.t) (source : a) =
+    match kind with
+    | Filename | Raw_data -> String.sexp_of_t source
+    | Host_and_port -> Host_and_port.sexp_of_t source;;
+(* 
+
+Error: This expression has type a but an expression was expected of type
+         string
+
+         不支持 OR 模式
+
+*)
+  
+  
+
+(* 
+*****************************************************************    
+【2】   GADT 不适用 PPX 的 派生序列化器   [@@deriving sexp]
+***************************************************************** 
+*)
+type _ number_kind =
+  | Int : int number_kind
+  | Float : float number_kind
+[@@deriving sexp];;
+(* 
+Error: This expression has type int number_kind
+       but an expression was expected of type a__007_ number_kind
+       Type int is not compatible with type a__007_   
+
+
+number_kind_of_sexp 的类型到底应该是什么？
+
+解析 "Int" 时，返回的类型必须是 int number_kind ，
+解析 "Float" 时，返回的类型必须是 float number_kind 。
+
+参数值和返回值类型之间的这种依赖关系在 OCaml 的类型系统中无法表达。       
+*)
+
+(* 
+
+但，仅创建序列化器的 [@@deriving sexp_of] 工作得很好
+
+
+type _ number_kind = Int : int number_kind | Float : float number_kind
+
+val sexp_of_number_kind :
+  ('a__001_ -> Sexp.t) -> 'a__001_ number_kind -> Sexp.t = <fun>
+*)
+type _ number_kind =
+ | Int : int number_kind
+ | Float : float number_kind
+[@@deriving sexp_of];;
+
+
+(* - : Sexp.t = Int *)
+sexp_of_number_kind Int.sexp_of_t Int;;
