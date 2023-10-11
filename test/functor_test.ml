@@ -476,3 +476,271 @@ module String_set =
               let compare = compare
             end);;
            
+
+
+
+
+(* 
+######################################################################################################################################################
+######################################################################################################################################################
+######################################################################################################################################################
+
+函子的应用
+
+######################################################################################################################################################
+######################################################################################################################################################
+######################################################################################################################################################
+*)
+
+(* 
+*******************************************  
+一个简单的例子
+*******************************************
+*)
+(* 模块类型 *)
+module type X_int = sig val x : int end;;
+
+(* 定义 声明了 返回 module类型的函子 *)
+(* module Increment : functor (M : X_int) -> X_int *)
+module Increment1 (M : X_int) : X_int = struct
+  let x = M.x + 1
+end;;
+
+(* 定义 无声明 返回 module类型的函子 *)
+(* module Increment : functor (M : X_int) -> sig val x : int end *)
+module Increment2 (M : X_int) = struct
+  let x = M.x + 1
+end;;
+
+
+(* 适用函子 定义新 module *)
+module Three = struct let x = 3 end;;
+
+module Four1 = Increment1(Three);;
+module Four2 = Increment2(Three);;
+
+print_int (Four1.x - Three.x);;   (*  1 *)
+print_int (Four2.x - Three.x);;   (*  1 *)
+
+
+
+(* 
+*******************************************  
+一个复杂的例子
+*******************************************
+*)
+
+module type Comparable = sig
+  type t
+  val compare : t -> t -> int
+end;;
+
+
+(* 
+   
+用于创建间隔模块的函子 
+
+
+module Make_interval :
+  functor (Endpoint : Comparable) ->
+    sig
+      type t = Interval of Endpoint.t * Endpoint.t | Empty
+      val create : Endpoint.t -> Endpoint.t -> t
+      val is_empty : t -> bool
+      val contains : t -> Endpoint.t -> bool
+      val intersect : t -> t -> t
+    end
+*)
+module Make_interval(Endpoint : Comparable) = struct
+
+  type t = | Interval of Endpoint.t * Endpoint.t
+           | Empty
+
+  (** [create low high] creates a new interval from [low] to
+      [high].  If [low > high], then the interval is empty *)
+  let create low high =
+    if Endpoint.compare low high > 0 then Empty
+    else Interval (low,high)
+
+  (** Returns true iff the interval is empty *)
+  let is_empty = function
+    | Empty -> true
+    | Interval _ -> false
+
+  (** [contains t x] returns true iff [x] is contained in the
+      interval [t] *)
+  let contains t x =
+    match t with
+    | Empty -> false
+    | Interval (l,h) ->
+      Endpoint.compare x l >= 0 && Endpoint.compare x h <= 0
+
+  (** [intersect t1 t2] returns the intersection of the two input
+      intervals *)
+  let intersect t1 t2 =  (* 求交集 *)
+    let min x y = if Endpoint.compare x y <= 0 then x else y in
+    let max x y = if Endpoint.compare x y >= 0 then x else y in
+    match t1,t2 with
+    | Empty, _ | _, Empty -> Empty
+    | Interval (l1,h1), Interval (l2,h2) ->
+      create (max l1 l2) (min h1 h2)
+  
+  (* let print = function
+  | Empty -> print_endline "nothing"
+  | Interval (l, h) -> Printf.printf "%a " l *)
+
+end;;
+
+
+(* 使用 *)
+module Int_interval =
+  Make_interval(struct
+    type t = int
+    let compare = Int.compare
+end);;
+
+
+module String_interval =
+  Make_interval(struct
+    type t = string
+    let compare = String.compare
+end);;
+
+
+module Float_interval =
+  Make_interval(struct
+    type t = float
+    let compare = Float.compare
+end);;
+
+
+module Int_interval = Make_interval(Int);;
+
+module Float_interval = Make_interval(Float);;
+
+module String_interval = Make_interval(String);;
+
+
+let i1 = Int_interval.create 3 8;;
+
+let i2 = Int_interval.create 4 10;;
+
+Int_interval.intersect i1 i2;;  (* - : Int_interval.t = Int_interval.Interval (4, 8) *)
+
+
+(* 得到倒序的  *)
+module Rev_int_interval =
+  Make_interval(struct
+    type t = int
+    let compare x y = Int.compare y x  (* 倒序实现 *)
+end);;
+
+
+let interval = Int_interval.create 4 3;;
+
+
+
+
+let rev_interval = Rev_int_interval.create 4 3;;
+
+(* 
+
+Rev_int_interval.t 与 Int_interval.t 是不同的类型，尽管其物理表示相同   
+
+
+Error: This expression has type Rev_int_interval.t
+       but an expression was expected of type Int_interval.t
+*)
+Int_interval.contains rev_interval 3;;
+
+
+
+(* 
+*******************************************  
+使函子变得抽象
+*******************************************
+*)
+
+(* 
+
+Make_interval 有问题。我们编写的代码取决于区间上限大于下限的不变量，但该不变量可能会被违反。
+
+该不变量由 create 函数强制执行，但由于 Int_interval.t 不是抽象的，因此我们可以绕过 create 函数:
+
+*)
+Int_interval.is_empty (Int_interval.create 4 3);;   (* going through create *)
+
+Int_interval.is_empty (Int_interval.Interval (4,3));;  (* by passing create, 【这 可以绕过 create 函数去直接创建  Int_interval.t 实例】！！！！！！！！！！ *)
+
+
+(* 
+   使得  Int_interval.t  抽象的做法   【显式接口】
+   
+module type Interval_intf =
+  sig
+    type t
+    type endpoint
+    val create : endpoint -> endpoint -> t
+    val is_empty : t -> bool
+    val contains : t -> endpoint -> bool
+    val intersect : t -> t -> t
+  end
+
+*)
+
+module type Interval_intf = sig
+  type t
+  type endpoint
+  val create : endpoint -> endpoint -> t
+  val is_empty : t -> bool
+  val contains : t -> endpoint -> bool
+  val intersect : t -> t -> t
+end;;
+
+
+(* 
+   重新定义 Make_interval， 并添加 返回类型的  
+   
+
+module Make_interval : functor (Endpoint : Comparable) -> Interval_intf
+*)
+module Make_interval(Endpoint : Comparable) : Interval_intf = struct
+  type endpoint = Endpoint.t
+  type t = | Interval of Endpoint.t * Endpoint.t
+           | Empty
+
+  (** [create low high] creates a new interval from [low] to
+      [high].  If [low > high], then the interval is empty *)
+  let create low high =
+    if Endpoint.compare low high > 0 then Empty
+    else Interval (low,high)
+
+  (** Returns true iff the interval is empty *)
+  let is_empty = function
+    | Empty -> true
+    | Interval _ -> false
+
+  (** [contains t x] returns true iff [x] is contained in the
+      interval [t] *)
+  let contains t x =
+    match t with
+    | Empty -> false
+    | Interval (l,h) ->
+      Endpoint.compare x l >= 0 && Endpoint.compare x h <= 0
+
+  (** [intersect t1 t2] returns the intersection of the two input
+      intervals *)
+  let intersect t1 t2 =
+    let min x y = if Endpoint.compare x y <= 0 then x else y in
+    let max x y = if Endpoint.compare x y >= 0 then x else y in
+    match t1,t2 with
+    | Empty, _ | _, Empty -> Empty
+    | Interval (l1,h1), Interval (l2,h2) ->
+      create (max l1 l2) (min h1 h2)
+
+end;;
+
+
+
+
+

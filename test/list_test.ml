@@ -86,6 +86,9 @@ List.iter2
 List.mem "frank" ["james"; "frank"; "mary"];;  (* 类似 contains() 函数     - : bool = true   *)
      
 
+(* open Printf
+let a = [1;2;3;4;5]
+let () = List.iter (printf "%d ") a *)
 
 let allEven = not (List.mem false (List.map (fun x -> x mod 2 = 0) [2; 4; 6; 8]));;  (* 是否全部为 偶数；  val allEven : bool = true *)
 
