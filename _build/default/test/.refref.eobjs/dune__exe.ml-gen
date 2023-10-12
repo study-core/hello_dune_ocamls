@@ -12,6 +12,9 @@ module Exn = Dune__exe__Exn
 (** @canonical Dune__exe.Extension_test *)
 module Extension_test = Dune__exe__Extension_test
 
+(** @canonical Dune__exe.First_class_module *)
+module First_class_module = Dune__exe__First_class_module
+
 (** @canonical Dune__exe.Flow *)
 module Flow = Dune__exe__Flow
 
