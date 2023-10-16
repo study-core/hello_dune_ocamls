@@ -11,7 +11,7 @@
 (* 
 type 'a pointer = Null | Pointer of 'a ref   
 *)
-type 'a pointer = Null | Pointer of 'a ref;;
+type 'a pointer = Null | Pointer of 'a ref;;  (* ++++++++++++++++++++++++++++++++++++++++++++++++++++ 要我肯定会写反的  ref 'a ++++++++++++++++++++++++++++++++++++++++++++++++++++ *)
 
 (* 
 定义 指针 赋值和解引用 函数 示例：   

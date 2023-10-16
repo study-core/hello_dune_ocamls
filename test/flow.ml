@@ -47,11 +47,11 @@ for / while 语句
 
 (* 
 
-for variable = start_value to end_value do
+for variable = start_value 【to】 end_value do
   expression
 done
   
-for variable = start_value downto end_value do
+for variable = start_value 【downto】 end_value do
   expression
 done
 
