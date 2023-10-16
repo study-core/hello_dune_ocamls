@@ -1076,7 +1076,9 @@ Int_interval.is_empty (Int_interval.Interval (4,3));;   (* 不能直接使用 �
 我们可能希望间隔模块具有的另一个功能是序列化的能力，即能够以字节流的形式读取和写入间隔。
 
 
-由于 函子 不能和 ppx 一起使用  (是吗 ?????)
+由于 函子 不能和 ppx 一起使用  (是吗 ?????)  (但是貌似  module type  的 sig 中可以由 ppx) 如：
+
+          module type M = sig type t [@@deriving sexp] end;;
 
 *)
 

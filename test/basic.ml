@@ -439,3 +439,38 @@ give_me_a_three lazy_expr;;  (* - : int = 3 *)
 (* 强行求惰性表达式的值时，用 Lazy.force 函数 *)
 
 Lazy.force lazy_expr;;   (* Exception: Division_by_zero. *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* 
+
+在 stdlib.ml 中定义了  反向运算符
+
+
+external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+
+*)
+(@@);;   (* - : ('a -> 'b) -> 'a -> 'b = <fun> *)

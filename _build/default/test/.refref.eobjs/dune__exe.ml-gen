@@ -3,8 +3,8 @@
 (** @canonical Dune__exe.Basic *)
 module Basic = Dune__exe__Basic
 
-(** @canonical Dune__exe.Constructor_test *)
-module Constructor_test = Dune__exe__Constructor_test
+(** @canonical Dune__exe.Constructor_variant *)
+module Constructor_variant = Dune__exe__Constructor_variant
 
 (** @canonical Dune__exe.Exn *)
 module Exn = Dune__exe__Exn

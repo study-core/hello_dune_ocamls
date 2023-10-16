@@ -309,3 +309,251 @@ create_comparable Float.compare;;   (* - : (module Comparable with type t = floa
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 *)
+#require "ppx_jane";;
+
+
+module type Query_handler = sig
+
+  (** Configuration for a query handler *)
+  type config
+
+  val sexp_of_config : config -> Sexp.t
+  val config_of_sexp : Sexp.t -> config
+
+  (** The name of the query-handling service *)
+  val name : string
+
+  (** The state of the query handler *)
+  type t
+
+  (** Creates a new query handler from a config *)
+  val create : config -> t
+
+  (** Evaluate a given query, where both input and output are
+      s-expressions *)
+  val eval : t -> Sexp.t -> Sexp.t Or_error.t
+end;;
+
+
+
+(* 
+   
+我们可以再 module type 的 签名中 使用 ppx
+
+(但 函子中却不行、  那 module 中行么 ??????)
+
+*)
+module type M = sig type t [@@deriving sexp] end;;
+(* module type M = sig type t val t_of_sexp : Sexp.t -> t val sexp_of_t : t -> Sexp.t end *)
+
+
+
+
+
+(* 
+   
+构造一个满足 Query_handler 接口的查询处理程序的示例。
+
+
+我们将从一个生成唯一整数 ID 的处理程序开始，该处理程序通过保留一个内部计数器来工作，每次请求新值时该计数器都会增加。
+
+
+在这种情况下，查询的输入只是简单的 s 表达式 () ，也称为 Sexp.unit 
+
+*)
+module Unique = struct
+  type config = int [@@deriving sexp]
+  type t = { mutable next_id: int }
+
+  let name = "unique"
+  let create start_at = { next_id = start_at }
+
+  let eval t sexp =
+    match Or_error.try_with (fun () -> unit_of_sexp sexp) with
+    | Error _ as err -> err
+    | Ok () ->
+      let response = Ok (Int.sexp_of_t t.next_id) in
+      t.next_id <- t.next_id + 1;
+      response
+end;;
+
+(* val unique : Unique.t = {Unique.next_id = 0} *)
+let unique = Unique.create 0;;
+
+(* - : (Sexp.t, Error.t) result = Ok 0 *)
+Unique.eval unique (Sexp.List []);;
+
+(* - : (Sexp.t, Error.t) result = Ok 1 *)
+Unique.eval unique (Sexp.List []);;
+
+
+(* 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+另一个示例：执行目录列表的查询处理程序          
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*)
+
+(* 这里，config 是解释相对路径的默认目录： *)
+#require "core_unix.sys_unix";;
+
+module List_dir = struct
+  type config = string [@@deriving sexp]
+  type t = { cwd: string }
+
+  (** [is_abs p] Returns true if [p] is an absolute path  *)
+  let is_abs p =
+    String.length p > 0 && Char.(=) p.[0] '/'
+
+  let name = "ls"
+  let create cwd = { cwd }
+
+  let eval t sexp =
+    match Or_error.try_with (fun () -> string_of_sexp sexp) with
+    | Error _ as err -> err
+    | Ok dir ->
+      let dir =
+        if is_abs dir then dir
+        else Core.Filename.concat t.cwd dir
+      in
+      Ok (Array.sexp_of_t String.sexp_of_t (Sys_unix.readdir dir))
+end;;
+
+(* val list_dir : List_dir.t = {List_dir.cwd = "/var"} *)
+let list_dir = List_dir.create "/var";;
+
+(* - : (Sexp.t, Error.t) result = Ok *)
+(* (yp networkd install empty ma mail spool jabberd vm msgs audit root lib db
+  at log folders netboot run rpc tmp backups agentx rwho) *)
+List_dir.eval list_dir (sexp_of_string ".");;
+
+(* - : (Sexp.t, Error.t) result = Ok (binding) *)
+List_dir.eval list_dir (sexp_of_string "yp");;
+
+
+
+(* 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   
+
+分派到多个查询处理程序
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*)
+
+(* 
+果我们想将查询分派到任意处理程序集合，该怎么办？
+
+
+
+理想情况下，我们只想将 【处理程序】 作为简单的数据结构（如列表）传递。
+
+这对于单独的 【模块】 和 【函子】 来说是很尴尬的，但是对于 【第一类模块】 来说这是很自然的。
+
+我们需要做的第一件事是创建一个签名，将 Query_handler 模块与实例化的查询处理程序相结合：   
+
+*)
+
+module type Query_handler_instance = sig
+  module Query_handler : Query_handler
+  val this : Query_handler.t
+end;;  (* module type Query_handler_instance = sig module Query_handler : Query_handler val this : Query_handler.t end *)
+
+(* 使用此签名，我们可以创建一个 第一类模块，其中包含查询的实例以及用于处理该查询的匹配操作 *)
+let unique_instance =
+  (module struct
+    module Query_handler = Unique
+    let this = Unique.create 0
+end : Query_handler_instance);;  (* val unique_instance : (module Query_handler_instance) = <module> *)
+
+
+(* 
+
+以这种方式构造实例有点冗长，但我们可以编写一个函数来消除大部分样板文件。
+
+请注意，我们再次使用 【本地抽象类型】
+
+*)
+
+let build_instance
+      (type a)  (* 【本地抽象类型】 *)
+      (module Q : Query_handler with type config = a)
+      config
+  =
+  (module struct
+    module Query_handler = Q
+    let this = Q.create config
+  end : Query_handler_instance);;   (* val build_instance : (module Query_handler with type config = 'a) -> 'a -> (module Query_handler_instance) = <fun> *)
+
+
+
+let unique_instance = build_instance (module Unique) 0;;              (* val unique_instance : (module Query_handler_instance) = <module> *)
+
+let list_dir_instance = build_instance (module List_dir)  "/var";;    (* val list_dir_instance : (module Query_handler_instance) = <module> *)
+
+(* 
+val build_dispatch_table :
+  (module Query_handler_instance) list ->
+  (string, (module Query_handler_instance)) Hashtbl.Poly.t = <fun>   
+*)
+let build_dispatch_table handlers =
+  let table = Hashtbl.create (module String) in
+  List.iter handlers
+    ~f:(fun ((module I : Query_handler_instance) as instance) ->
+      Hashtbl.set table ~key:I.Query_handler.name ~data:instance);
+  table;;
+
+
+
+(* 
+
+val dispatch :
+  (string, (module Query_handler_instance)) Hashtbl.Poly.t ->
+  Sexp.t -> Sexp.t Or_error.t = <fun>
+
+*)
+let dispatch dispatch_table name_and_query =
+  match name_and_query with
+  | Sexp.List [Sexp.Atom name; query] ->
+    begin match Hashtbl.find dispatch_table name with
+    | None ->
+      Or_error.error "Could not find matching handler"
+        name String.sexp_of_t
+    | Some (module I : Query_handler_instance) ->
+      I.Query_handler.eval I.this query
+    end
+  | _ ->
+    Or_error.error_string "malformed query";;
+
+(* 
+
+val cli : (string, (module Query_handler_instance)) Hashtbl.Poly.t -> unit = <fun>
+
+*)
+open Stdio;;
+let rec cli dispatch_table =
+  printf ">>> %!";
+  let result =
+    match In_channel.(input_line stdin) with
+    | None -> `Stop
+    | Some line ->
+      match Or_error.try_with (fun () ->
+        Core.Sexp.of_string line)
+      with
+      | Error e -> `Continue (Error.to_string_hum e)
+      | Ok (Sexp.Atom "quit") -> `Stop
+      | Ok query ->
+        begin match dispatch dispatch_table query with
+        | Error e -> `Continue (Error.to_string_hum e)
+        | Ok s    -> `Continue (Sexp.to_string_hum s)
+        end;
+  in
+  match result with
+  | `Stop -> ()
+  | `Continue msg ->
+    printf "%s\n%!" msg;
+    cli dispatch_table;;
+
+
+(* 启动 *)
+let () =  cli (build_dispatch_table [unique_instance; list_dir_instance])
