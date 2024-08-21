@@ -31,6 +31,8 @@
 let rec total l =
   match l with
   | [] -> 0
+
+  (* h :: t         等价于                元素 h :: 列表 t *)
   | h :: t -> h + total t;;   (* val total : int list -> int = <fun> *)
 
 total [1; 3; 5; 3; 1];;  (* - : int = 13 *)

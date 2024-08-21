@@ -71,7 +71,7 @@
     签名定义  (也是 命名模块类型 (模块类型定义))
     (查看 module_test.ml 文件对比)
 
-    module type ELEMENT = sig type t val compare : t -> t -> int end
+    module type ELEMENT = sig      type t     val compare : t -> t -> int     end
 
 
     下面这个是 module 的类型签名 定义
@@ -112,7 +112,7 @@ end
 
     如：
 
-    使用  functor 关键字时的 写法
+    使用  functor 关键字时的 写法 ？？？？ 这是指 类型是这样的 而不是 定义写法 吧 ？？？
 
     module MakeSet = functor (Element : ELEMENT) ->
       sig
@@ -124,6 +124,36 @@ end
         val elements : 'a -> 'a
       end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+又如:
+
+
+module type OrderedType = sig
+  type t
+  val compare : t -> t -> int
+end
+
+
+
+module Make : functor (Ord : OrderedType) -> Set.S           其中  Set.S  是 Set 模块中定义的某个  module type 签名类型
+
+
+
+
 ****************************************************************************************************************************************
 
 
@@ -131,6 +161,7 @@ end
 
 *)
 module MakeSet (Element : ELEMENT) =
+
   struct
 
     type elt = Element.t  (* 使用 ELEMENT 的 t 作为 elt *)
@@ -143,17 +174,17 @@ module MakeSet (Element : ELEMENT) =
     let rec add elt = function  (* 往 list 中添加新元素的 add 函数 *)
                             | [] -> [elt]
                             (* 从 list 中的 首元素 开始 比较 *)
-                            | (x :: rest as s) ->
+                            | (x :: rest as s) ->          (* 这里的 s 是 x::rest 这个 list 整体， 而不是  rest *)
 
                                 match Element.compare elt x with
                                 (* 如果 等于首元素， 则不做 add 操作 *)
                                 | 0 -> s
                                 (* 如果 不等于 首元素 且 < 0 则加到 list 头部 *)
                                 | r when r < 0 -> elt :: s
-                                (* 否则，对比 list 下一个 元素 *)
+                                (* 否则，对比 list 下一个 元素，将 elt 插入到 list 的某个位置 *)
                                 | _ -> x :: (add elt rest)
 
-    let rec elements s = s
+    let rec elements s = s   (* 递归？ 但没用？ *)
   end;;
 
 
@@ -199,7 +230,7 @@ module MakeSet (Element : ELEMENT) :
   (* 签名表达式返回 *)
   sig
     type elt = Element.t
-    type t (* 抽象数据类型 *)
+    type t (* 抽象数据类型，类似 rust 的  关联类型 *)
     val mem : elt -> t -> bool
     val add : elt -> t -> t
     val elements : t -> elt list
@@ -259,7 +290,8 @@ module IntSet = MakeSet(struct
     val s1 : IntSet.t = <abstr> (* 抽象数据类型 *)
     val s2 : IntSet.t = <abstr>   
 *)
-open IntSet;;
+open IntSet;; (* 类似 rust 的 use *)
+
 let s1 = add 1 (add 2 empty) and s2 = add 3 (add 4 empty);;
 
 
@@ -303,7 +335,7 @@ let s1 = add "a" (add "b" empty) and s2 = add "c" (add "d" empty);;
 
 module type 新类型 = 旧类型 with type elt = 被指定的类型;;   如：   
 
-module type E2 = E1 with type elt = int;;
+module type E2 = E1 with type elt = int;;                          将就类型 E1 的 elt 指定为 int 去生成新类型 E2
 
 
 *)
@@ -501,19 +533,36 @@ module String_set =
 (* 
 *******************************************  
 一个简单的例子
+
+
+
+【我 TM 到现在都不知道 有返回值的 functor 和 无返回值的 functor 的区别】
+
 *******************************************
 *)
 (* 模块类型 *)
 module type X_int = sig val x : int end;;
 
-(* 定义 声明了 返回 module类型的函子 *)
-(* module Increment : functor (M : X_int) -> X_int *)
+(* 
+
+定义 声明了 返回 module类型的函子
+
+
+module Increment : functor (M : X_int) -> X_int
+
+*)
 module Increment1 (M : X_int) : X_int = struct
   let x = M.x + 1
 end;;
 
-(* 定义 无声明 返回 module类型的函子 *)
-(* module Increment : functor (M : X_int) -> sig val x : int end *)
+(* 
+   
+定义 无声明 返回 module类型的函子
+
+
+module Increment : functor (M : X_int) -> sig val x : int end
+
+*)
 module Increment2 (M : X_int) = struct
   let x = M.x + 1
 end;;
@@ -525,8 +574,8 @@ module Three = struct let x = 3 end;;
 module Four1 = Increment1(Three);;
 module Four2 = Increment2(Three);;
 
-print_int (Four1.x - Three.x);;   (*  1 *)
-print_int (Four2.x - Three.x);;   (*  1 *)
+print_int (Four1.x - Three.x);;   (*  1  *)
+print_int (Four2.x - Three.x);;   (*  1  *)
 
 
 
@@ -544,7 +593,7 @@ end;;
 
 (* 
    
-用于创建间隔模块的函子 
+用于创建 间隔模块 的函子 
 
 
 module Make_interval :
@@ -602,29 +651,33 @@ end;;
 module Int_interval =
   Make_interval(struct
     type t = int
-    let compare = Int.compare
+    let compare = Int.compare       (* 使用 Int 的 compare 函数定义 compare 函数*)
 end);;
 
 
 module String_interval =
   Make_interval(struct
     type t = string
-    let compare = String.compare
+    let compare = String.compare    (* 使用 String 的 compare 函数定义 compare 函数*)
 end);;
 
 
 module Float_interval =
   Make_interval(struct
     type t = float
-    let compare = Float.compare
+    let compare = Float.compare     (* 使用 Float 的 compare 函数定义 compare 函数*)
 end);;
 
 
-module Int_interval = Make_interval(Int);;
 
-module Float_interval = Make_interval(Float);;
 
-module String_interval = Make_interval(String);;
+module Int_interval = Make_interval(Int);;            (* 使用 底层库 Int *) 
+
+module String_interval = Make_interval(String);;      (* 使用 底层库 String *) 
+
+module Float_interval = Make_interval(Float);;        (* 使用 底层库 Float *) 
+
+
 
 
 let i1 = Int_interval.create 3 8;;
@@ -822,7 +875,7 @@ module type Int_interval_intf =
 
 
 (* 
-我们还可以在函子的上下文中使用共享约束。最常见的用例是您想要公开函子生成的模块的某些类型与提供给函子的模块中的类型相关。
+我们还可以在函子的上下文中使用共享约束。最常见的用例是您  想要公开函子生成的模块 的某些类型 与 提供给函子的模块中的类型相关。
 
 
 
@@ -1114,6 +1167,8 @@ module Make_interval(Endpoint : Comparable)
 
   type t = | Interval of Endpoint.t * Endpoint.t
            | Empty
+
+           
   [@@deriving sexp]     (*  【这里是不可行的】  *)
 
   (** [create low high] creates a new interval from [low] to

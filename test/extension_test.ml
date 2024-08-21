@@ -77,7 +77,7 @@ concat "dog" "cat";;
    
 
 (* - : string = "dog,cat"  *)
-concat "dog" "cat" ~sep:",";;
+concat "dog" "cat" ~sep:",";;   (* ?sep 使用的时候，和 命名参数一样使用  ~sep:xxx 这样用 *)
 
 
 (* 
@@ -114,7 +114,10 @@ range 2 1 10;;
 
 以上这个会报错
       Error: The function applied to this argument has type ?step:int -> int list
-      This argument cannot be applied without label   
+      This argument cannot be applied without label  
+      
+     应用于该参数的函数类型为 ?step:int -> int list
+      该参数不能在没有标签的情况下应用  
 
 *)
 
@@ -157,9 +160,11 @@ let set_height window height = window.height <- height;;  (* val set_height : wi
 (*   
 为什么 open_window 要用 () ?
 
-因为当 ?title ?width ?height 三者都不传时， open_window () 则能表示是 函数的调用 入参为 uint， 而 open_window;; 则不是为函数调用
+因为当 ?title ?width ?height 三者都不传时， open_window () 则能表示是 函数的调用 入参为 uint， 而 【open_window;;】 则不是为函数调用
 
-当定义为 let open_window ?title ?width ?heigh 时，则 ?title ?width ?height 三者都不传时，就会是 open_window;;， 从而不是函数 ... 当然需要报错啊
+即， 如果定义为 let open_window ?title ?width ?heigh 时，则 ?title ?width ?height 三者都不传时，就会是 【open_window;;】 从而不是函数 ... 当然需要报错啊
+
+即使是 不传参的函数调用都需要为  【open_window ();;】 
  *)
 let open_window ?title ?width ?height () =
   let window = create_window () in

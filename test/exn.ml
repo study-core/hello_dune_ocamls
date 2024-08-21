@@ -28,6 +28,7 @@ raise (Fuga "fuga!");;
     val exnlist : exn list = [Not_found; Hoge; Invalid_argument "fuga"]
 *)
 let exnlist = [Not_found; Hoge; (Invalid_argument "fuga")];;
+
 exnlist;;
 
 (* 

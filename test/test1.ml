@@ -22,7 +22,7 @@ type expr =
 
    有参的异常定义为:   Ill_typed of String 之类， 使用为 Ill_typed "xx" 或 Ill_typed ("xx")
 *)
-exception Ill_typed
+exception Ill_typed;;
 
 
 (* 

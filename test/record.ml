@@ -1,7 +1,7 @@
 (* 
     type account = { name : string; mutable amount : int; }
 *)
-type account = {name:string;mutable amount:int};;
+type account = {name:string; mutable amount:int};;
 
 (* 
     val ac : account = {name = "bob"; amount = 1000}   

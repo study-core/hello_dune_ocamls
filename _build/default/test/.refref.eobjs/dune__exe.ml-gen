@@ -54,6 +54,10 @@ module Monad = Dune__exe__Monad
 module Object_test = Dune__exe__Object_test
 
 
+(** @canonical Dune__exe.Option *)
+module Option = Dune__exe__Option
+
+
 (** @canonical Dune__exe.Pattern_match_test *)
 module Pattern_match_test = Dune__exe__Pattern_match_test
 
@@ -72,6 +76,10 @@ module Ref = Dune__exe__Ref
 
 (** @canonical Dune__exe.Refref *)
 module Refref = Dune__exe__Refref
+
+
+(** @canonical Dune__exe.Result *)
+module Result = Dune__exe__Result
 
 
 (** @canonical Dune__exe.String_test *)

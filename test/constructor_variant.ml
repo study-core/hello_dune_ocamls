@@ -41,7 +41,7 @@
 ********************************************************************    
     而 【多态变体】可以使用 【单个构造子】，代替所有 定义的 构造子
     
-    在两个不同变体类型之间共享标签，而 多态变体 正好可以以一种自然的方式做到这一点
+    在【两个不同变体类型之间共享标签】，而 多态变体 正好可以以一种自然的方式做到这一点
 *)
 
 
@@ -198,7 +198,7 @@ type color =
   | Gray  of int    ;;               (* 24 grayscale levels *)
 
 let color_to_int = function
-  | Basic (basic_color,weight) ->
+  | Basic (basic_color, weight) ->
     let base = match weight with Bold -> 8 | Regular -> 0 in
     base + basic_color_to_int basic_color
   | RGB (r,g,b) -> 16 + b + g * 6 + r * 36
@@ -236,8 +236,8 @@ type basic_color =
 type color =
   (* [ `Basic of basic_color * [ `Bold | `Regular ] *)
   [ `Basic of basic_color * weight
-  | `Gray of int
-  | `RGB  of int * int * int ]
+  | `RGB  of int * int * int 
+  | `Gray of int ]
 
 
 let basic_color_to_int = function
@@ -246,7 +246,7 @@ let basic_color_to_int = function
 
 
 let color_to_int = function
-    | `Basic (basic_color,weight) ->
+    | `Basic (basic_color, weight) ->
       let base = match weight with `Bold -> 8 | `Regular -> 0 in
       base + basic_color_to_int basic_color
     | `RGB (r,g,b) -> 16 + b + g * 6 + r * 36
@@ -254,11 +254,11 @@ let color_to_int = function
 
 
 (* 
-      extended_color_to_int 要以窄化的类型（即更少的标签）调用color_to_int
+      extended_color_to_int 要以窄化的类型（即更少的标签）调用 color_to_int
 
       正常来讲，这种窄化可以使用模式匹配来完成
       
-      下面的代码中，color变量只包含 `Basic、 `RGB和 `Gray标签，而不包含 `RGBA标签
+      下面的代码中，color 变量只包含 `Basic、 `RGB和 `Gray标签，而不包含 `RGBA 标签
 *)
 let extended_color_to_int = function
     | `RGBA (r,g,b,a) -> 256 + a + b * 6 + g * 36 + r * 216
@@ -344,7 +344,7 @@ let extended_color_to_int : extended_color -> int = function
 
 let extended_color_to_int : extended_color -> int = function
   | `RGBA (r,g,b,a) -> 256 + a + b * 6 + g * 36 + r * 216
-  | #color as color -> color_to_int color (* 此处的 color 只是名字叫做 color 的变量，可以改成 其他的 如 x ; 而 #color 的 color 是 color类型名称 *)
+  | #color as color -> color_to_int color (* 此处的 color 只是名字叫做 color 的变量，可以改成 其他的 如 x ; 而 #color 的 color 是 color 类型名称 *)
 
 (* OCaml ∗ variants-termcol/terminal_color.ml ∗ all code *)
 

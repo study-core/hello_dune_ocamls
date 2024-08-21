@@ -23,7 +23,19 @@ unit	      ()	          ()是unit类型的唯一的值
 
 
 
-又有一说：
+又有一说： 
+
+
+官方教程中提到, int 类型表示与平台相关的有符号整数。这意味着 int 并不总是具有相同的位数。它取决于底层平台特性，例如处理器架构或操作系统。
+
+
+int 在 32 位架构中有 31 位，在 64 位架构中有 63 位，因为有一个位保留给 OCaml 的运行时操作。
+
+标准库还提供 Int32 和 Int64 模块，它们支持对 32 位和 64 位有符号整数进行独立于平台的操作。
+
+
+
+【OCaml 不会在值之间执行任何隐式类型转换。因此，算术表达式不能混合整数和浮点数。参数要么全部为 int ，要么全部为 float 】
 
 
 unit:             (* void, takes only one value: () *)
@@ -169,6 +181,7 @@ type person =
 
 let birthday p =
   p.age <- p.age + 1;;  (* 修改字段的值, val birthday : person -> unit = <fun> *)
+
 
 
 (* 类型 *)
@@ -332,9 +345,9 @@ compare x y     (* positive, when x > y *)
 
 (* 
 
-while cond do ... done;
-for var = min_value to max_value do ... done;
-for var = max_value downto min_value do ... done;
+[while] cond [do] ... [done];
+[for] var = min_value [to] max_value [do] ... [done];
+[for] var = max_value [downto] min_value [do] ... [done];
    
 *)
 

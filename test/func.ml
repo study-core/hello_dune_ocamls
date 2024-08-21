@@ -19,7 +19,7 @@ let rec even n =
   match n with
   | 0 -> true
   | x -> odd (x-1)
-and odd n =
+and odd n =                (* 妈的， odd 这个不需要 rec ？？？ *)
   match n with
   | 0 -> false
   | x -> even (x-1);;
@@ -204,8 +204,15 @@ let p = fun true -> 1 | false -> 0;;
 Error: syntax error
 *)
 
+
+
+
+
+
+
 (* 
-函数不可以判断是否相等    
+
+函数不可以判断是否相等    (指 函数， 不限定 function 或 fun 关键字哈~)
 
 
 (fun x -> x) = (fun x -> x)
@@ -224,4 +231,4 @@ let ( .%[]<- ) = Bytes.set;;
 
 let str = "kally";;
 
-(Bytes.of_string str).%[4] <- 'a';
+(Bytes.of_string str).%[4] <- 'a';;   (* 等价于    Bytes.set (Bytes.of_string  str) 4 'a';;     *)
