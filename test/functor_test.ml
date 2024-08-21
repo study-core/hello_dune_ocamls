@@ -16,13 +16,17 @@
 
 
 
+函子几乎就是一个模块，只不过它需要应用于模块。这会将其变成一个模块。从这个意义上说，函子允许    模块参数化
 
 
+
+
+OCaml 接口文件 ( .mli ) 必须是模块，而不是函子；                   函子必须嵌入模块内 (.mi) 
 
 ######################################################################################################################################################
 
 
-    【函数器】本质上是根据 其他模块 编写 模块 的一种方式
+    【函数器】本质上是根据        其他模块         编写       模块       的一种方式
 
     【仿函数】是一个由【另一个模块】参数化的模块，
     就像【函数】是一个由【其他值】（参数）参数化的值一样
@@ -330,7 +334,7 @@ let s1 = add "a" (add "b" empty) and s2 = add "c" (add "d" empty);;
 
 (* 
 ######################################################################################################################################################
-显式 指定某个 sig 中的字段值并生成新字段        【共享约束】  
+显式 指定某个 sig 中的字段值并生成新字段        【共享约束】              【 with type 】
 ######################################################################################################################################################
 
 module type 新类型 = 旧类型 with type elt = 被指定的类型;;   如：   
@@ -1351,6 +1355,50 @@ Int_interval.sexp_of_t (Int_interval.create 4 3);;
 
 
 
+(* 
+
+函子的一些高级用例：
+
+*)
+
+
+
+(* 
+   
+模块之间的依赖关系     
+
+*)
+
+
+(* 
+
+ IterPrint 模块，该模块公开 string list -> unit 类型的单个函数 f 并具有两个依赖项：
+
+          1. 模块 List 到 List.iter 和 f 的类型
+
+          2. 模块 Out_channel 到 Out_channel.output_string
+
+*)
+
+(* 
+    funkt.ml
+*)
+module StringSet = Set.Make(String)
+
+module IterPrint : sig
+  val f : string list -> unit
+end = struct
+  let f = List.iter (fun s -> Out_channel.output_string stdout (s ^ "\n"))    (* 柯里化 ??? *)
+end
+
+
+let _ =
+  stdin
+  |> In_channel.input_lines
+  |> List.concat_map Str.(split (regexp "[ \t.,;:()]+"))
+  |> StringSet.of_list
+  |> StringSet.elements
+  |> IterPrint.f        (* 这里就是 S.f *)
 
 
 
@@ -1364,3 +1412,91 @@ Int_interval.sexp_of_t (Int_interval.create 4 3);;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+  
+
+(* 
+   
+依赖注入      
+
+        一种对依赖项进行参数化的方法
+
+
+*)
+
+(* 
+
+上例子的 模块 IterPrint 被重构为一个函数，它以提供函数 iter 的模块为参数。 
+
+        with type 'a t := 'a Dep.t        约束意味着参数 Dep 中的 t 类型将取代  结果模块  S 中的 t 类型
+        
+这样，f 的类型就可以使用 Dep 的 t 类型。 
+
+经过重构后，IterPrint 只有一个依赖关系。 在编译时，还没有函数 iter 的实现。
+
+*)
+
+
+(* 
+    iterPrint.ml
+*)
+module type Iterable = sig
+  type 'a t
+  val iter : ('a -> unit) -> 'a t -> unit
+end
+
+module type S = sig
+  type 'a t
+  val f : string t -> unit
+end
+
+module Make(Dep: Iterable) : S with type 'a t := 'a Dep.t = struct
+  let f = Dep.iter (fun s -> Out_channel.output_string stdout (s ^ "\n"))       (* 柯里化 ??? *)
+end
+
+
+(* 
+为什么不用下面这种的原因：
+
+            在函子之外，不知道 type 'a t 设置为 Dep.t  (即在函子外不知道 'a S.t 被设置为 Dep.t )
+            
+            在 funkt.ml 中， IterPrint.t (即是 S.t) 作为抽象类型出现在 Make 的结果中  (外界看不到里面的具体实现： type 'a t = 'a Dep.t， 因为 Dep.t 亦是抽象的)
+            
+            这就是为什么需要 with type  约束 【它对外传播的信息是，IterPrint.t 与 Dep.t 类型相同】
+            
+            【使用 with type 约束的类型不会被函子体内的定义所掩盖】 故使用上面的定义
+
+
+
+
+module Make(Dep: Iterable) : S = struct
+  type 'a t = 'a Dep.t
+  let f = Dep.iter (fun s -> Out_channel.output_string stdout (s ^ "\n"))
+end
+
+*)
+
+
+(* 
+    funkt.ml
+*)
+module StringSet = Set.Make(String)
+module IterPrint = IterPrint.Make(List)
+
+let _ =
+  stdin
+  |> In_channel.input_lines
+  |> List.concat_map Str.(split (regexp "[ \t.,;:()]+"))
+  |> StringSet.of_list
+  |> StringSet.elements
+  |> IterPrint.f      (* 这里就是 S.f *)
