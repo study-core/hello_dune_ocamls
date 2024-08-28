@@ -1,6 +1,8 @@
 # PPX 用法
 
-PPX 的机制，允许您通过 -ppx 编译器标志添加到编译管道代码，以在语法级别转换 OCaml 程序。
+PPX 的机制，允许您通过 `-ppx` 编译器标志添加到编译管道代码，以在语法级别转换 OCaml 程序。
+
+(**ppx 的目的是从一个 AST 移动到另一个 AST**)  PPX 程序是根据从  类型推断的元编程信息  向  AST  添加额外节点的东西
 
 OCaml 中有两种主要形式的扩展点：
 
@@ -9,6 +11,8 @@ OCaml 中有两种主要形式的扩展点：
 
 
 ### 属性
+
+属性是语法树的“装饰”，它们大多被类型检查器忽略，但可以被外部工具使用 (如: `ppx_deriving` 或 `ppx_yojson` 等库识别)
 
 [属性] 的语法是为节点添加后缀 `[@attribute_name    payload]` ，其中 `payload` 本身就是 OCaml AST
 
@@ -53,11 +57,8 @@ let exit_with = function
 
     Line 2, characters 11-23:
     Warning 52 [fragile-literal-pattern]: Code should not depend on the actual values of
-    this constructor's arguments. They are only for information
-    and may change in future versions. (See manual section 11.5)
-    val exit_with : program_result -> int = <fun>
+    this constructor's arguments. They are only for information and may change in future versions. [See manual section 11.]  `val exit_with : program_result -> int = <fun>`
 *)
-
 ```
 
 
@@ -125,6 +126,8 @@ end;;
 
 ### 拓展点
 
+扩展节点是语法树中的通用占位符。它们被类型检查器拒绝，并打算由外部工具（例如 -ppx 重写器）“扩展”。
+
 
 [扩展节点] 的语法是 `[%extension_name     payload]` 
 
@@ -164,6 +167,7 @@ let%html v = "<a href='ocaml.org'>OCaml!</a>"
 **注意:** 有一种方法可以 更改 `有效 payload` 的预期类型。
 
   通过在扩展名后面添加 `:` , 预期的 `有效 payload` 现在是一个 [签名节点] (即与 .mli 文件中接受的内容相同)。 类似地  `?`  会将预期的 `有效 payload` 转换为 [模式节点]。
+  (看，这个 README.md 中的示例可能会看得懂: `https://github.com/NathanReb/ppx_yojson`)
 
 
  ```ml
@@ -181,3 +185,69 @@ let [%ext_name? a :: _ ] = ()
 扩展节点旨在由 PPX 重写，在这方面，对应于一种特定类型的 PPX `扩展器`。 
 扩展器是 PPX 重写器，它将用匹配的名称替换所有出现的 [扩展节点]。
 它使用一些仅依赖于 `有效 payload` 的生成代码来执行此操作，没有有关 [扩展节点] 上下文的信息 (即: 无法访问代码的其余部分)，也无需修改任何其他内容。
+
+
+
+
+
+
+
+
+
+### 补充
+
+
+#### PPX 工作原理
+
+实现 PPX 的软件会遍历抽象语法树 (AST), 寻找它想要响应的结构.  (例如:  `ppx_deriving` 框架将查找标有 `@@deriving` 的属性节点; `ppx_regexp` 扩展将查找名称为 `%pcre` 的扩展节点)
+
+
+当 PPX 找到这样的结构时, 扩展可以采取相当任意的行动作为响应, 尽管通常扩展会重写 OCaml AST 的一部分. (例如: `ppx_deriving` 的 `show` 插件将检查已注释为 `[@@deriving show]` 的类型的 AST，然后将为 `该类型定制的适当 show 函数` 插入到 AST 中)
+
+
+#### PPX 的语法钩子
+
+1. 以 `#` 字符开头并包含多个 `#` 字符的运算符名称保留用于扩展
+2. `int` 和 `float` 文字后跟 [g..z|G..Z] 范围内的一个字母标识符保留用于扩展
+3. [属性] 被命名为 AST 节点的附件，如果未解释，编译器将忽略它们     (如: `ppx_deriving` 或 `ppx_yojson` 等库识别)
+4. [扩展节点] 是专用的 AST 节点，如果未解释，将被编译器拒绝         (只能有 `-ppx` 重写器识别)
+
+
+**形式**
+
+1. 对于 [代数术语]:  `(值、类型、模式、模块、模块类型、类和类类型表达式)`，[扩展节点] 和 [属性] 采用以下形式
+
+```ml
+(* 
+  拓展节点:     [%extension-name expression]   
+*)
+
+
+(* 
+  属性:         expression [@attribute-name optional-arguments]  
+*)
+```
+
+2. 对于 [模块] 和 [签名项]，[扩展节点] 和 [属性] 采用以下形式
+
+```ml
+(* 
+  拓展节点:     [%%extension-name module-item] 
+*)
+
+
+(* 
+  属性:         module-item [@@attribute-name optional-arguments]     
+*)
+```
+
+3. 独立的条目 (浮动属性) 
+
+```ml
+(* 
+  属性:         [@@@attribute-name optional-arguments]   
+*)
+```
+
+
+
