@@ -44,12 +44,12 @@ OCaml 接口文件 ( .mli ) 必须是模块，而不是函子；                
 ---------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------
 
-    【module 名称 (参数名称 : 签名表达式) = 模块化表达式】
+    【module 名称 (参数名称 : 签名表达式) = 模块化表达式】              一般用这个
 
 
     以下糖衣语法:
 
-    【module 名称 = functor (参数名称 : 签名表达式) -> 模块化表达式  】
+    【module 名称 = functor (参数名称 : 签名表达式) -> 模块化表达式  】  对的
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -111,14 +111,14 @@ end
     或者 通过在 .mli 文件中指定：
 
     ********************************************************************
-    module F (X : X_type) : Y_type
+    module type F (X : X_type) : Y_type
     ********************************************************************
 
     如：
 
-    使用  functor 关键字时的 写法 ？？？？ 这是指 类型是这样的 而不是 定义写法 吧 ？？？
+    定义函子的类型: (语法糖形式)
 
-    module MakeSet = functor (Element : ELEMENT) ->
+    module type MakeSetType = functor (Element : ELEMENT) ->
       sig
         type elt = Element.t
         type t = elt list
@@ -129,6 +129,27 @@ end
       end
 
 
+    直接定义函子: (语法糖形式)
+
+    module MakeSet = functor (Element : ELEMENT) ->
+      struct
+
+        type elt = Element.t 
+        type t = elt list  
+        let empty = [] 
+        let mem x set = List.exists (fun y -> Element.compare x y = 0) set
+        let rec add elt = function
+                                | [] -> [elt]
+                                | (x :: rest as s) ->  
+                                    match Element.compare elt x with
+                                    | 0 -> s
+                                    | r when r < 0 -> elt :: s
+                                    | _ -> x :: (add elt rest)
+
+        let rec elements s = s
+      end;;
+
+      
 
 
 
@@ -152,6 +173,7 @@ module type OrderedType = sig
 end
 
 
+下面是入参为: functor (Ord : OrderedType); 返参为: Set.S 的函子 Make
 
 module Make : functor (Ord : OrderedType) -> Set.S           其中  Set.S  是 Set 模块中定义的某个  module type 签名类型
 

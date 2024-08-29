@@ -5,6 +5,16 @@
 *)
 
 
+
+
+(* 
+************************************************************
+      let 绑定不是赋值，它引入了具有新作用域的新标识符
+************************************************************  
+*)
+
+
+
 (* 
   内置基础类型：6 种
   int, float, char, string, and bool, unit
@@ -239,7 +249,7 @@ Unix.(expr)             (* local open *)
 
 (* 
 ######################################################################################################################################################
-函子   
+函数
 ######################################################################################################################################################
 *)
 
@@ -276,17 +286,31 @@ let f : 'a 'b. 'a*'b -> 'a    (* function with constrainted *)
 *)
 
 (* 
-module M = struct .. end            (* module definition *)
-module M: sig .. end= struct .. end (* module and signature *)
-module M = Unix                     (* module renaming *)
-include M                           (* include items from *)
-module type Sg = sig .. end         (* signature definition *)
-module type Sg = module type of M   (* signature of module *)
-let module M = struct .. end in ..  (* local module *)
-let m = (module M : Sg)             (* to 1st-class module *)
-module M = (val m : Sg)             (* from 1st-class module *)
-module Make(S: Sg) = struct .. end  (* functor *)
-module M = Make(M')                 (* functor application *)
+module M = struct .. end                  (* module definition *)
+
+module M: sig .. end = struct .. end      (* module and signature *)
+
+module M = Unix                           (* module renaming *)
+
+module M = (Unix : LinuxType);;            (* 将 Unix 模块限制为 LinuxType 类型 (这里的 LinuxType 是未完全覆盖 Unix 成员内容的  module type sig)，并起别名  (将得到和 Unix 不太一样的模块) *)
+
+(* 写在 module xxx = struct 定义之内, 我觉得 *)
+include M                                 (* include items from *)
+
+module type Sg = sig .. end               (* signature definition *)
+
+module M = (struct ... end : Sg);;        (* module and signature *)
+module M : Sg = struct ... end;;          (* module and signature *)
+
+module type Sg = module type of M         (* signature of module *)
+
+let module M = struct .. end in ..        (* local module *)
+
+let m = (module M : Sg)                   (* to 1st-class module *)
+module M = (val m : Sg)                   (* from 1st-class module *)
+
+module MakeXxx(S: Sg) = struct .. end     (* functor *)
+module M = MakeXxx(M')                    (* functor application *)
    
 *)
 
@@ -326,10 +350,10 @@ Patterns:
 
 (* 
 
-x = y           (* (Structural) Polymorphic Equality *)
-x == y          (* (Physical) Polymorphic Inequality *)
-x <> y          (* (Structural) Polymorphic Equality *)
-x != y          (* (Physical) Polymorphic Inequality *)
+x = y           (* (Structural) Polymorphic Equality *)             结构    相等
+x == y          (* (Physical) Polymorphic Inequality *)             物理    相等
+x <> y          (* (Structural) Polymorphic Equality *)             结构    不相等
+x != y          (* (Physical) Polymorphic Inequality *)             物理    不相等
 compare x y     (* negative, when x < y *)
 compare x y     (* 0, when x = y *)
 compare x y     (* positive, when x > y *)   
@@ -469,10 +493,13 @@ Lazy.force lazy_expr;;   (* Exception: Division_by_zero. *)
 
 
 
+{|This is a quoted string, here, neither \ nor " are special characters|} ;;     (* val - : string ,  注意  [| |] 才表示 数组 *)
 
 
+{|"\\"|}="\"\\\\\"";;  (* true *)
 
 
+{delimiter|the end of this|}quoted string is here|delimiter} = "the end of this|}quoted string is here";;  (* true *)
 
 
 

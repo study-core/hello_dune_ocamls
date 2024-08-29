@@ -45,8 +45,18 @@ OCaml 视为分为两部分：
 
 module type X_int = sig val x : int end;;
 
-(* 函子 *)
-module Three : X_int = struct let x = 3 end;;
+(* 
+  定义一般模块
+
+  module M = struct .. end                  (* module definition *)
+
+  module M: sig .. end= struct .. end       (* module and signature *)
+
+
+
+  而 函子 语法为：  module 函子Name (入参的模块变量名 : 入参的模块类型) = struct .. end   如： module MakeSet (Element : ELEMENT) = struct .. end 
+*)
+module Three : X_int = struct let x = 3 end;;   (* 一般模块 module and signature *) 
 
 Three.x;;
 
@@ -54,7 +64,7 @@ Three.x;;
 ------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------
 *************************************************   
-将 函子 转成 第一类模块
+将 一般模块 转成 第一类模块
 *************************************************
 
 

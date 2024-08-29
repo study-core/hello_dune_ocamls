@@ -166,3 +166,9 @@ Error: This expression has type int expr
 
 请使用 GADT 
 *)
+
+
+
+
+Printf.printf "%i + %i is an integer value, %F * %F is a float, %S\n"
+  3 2 4.5 1. "this is a string";;
