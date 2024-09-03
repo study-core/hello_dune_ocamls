@@ -1,23 +1,10 @@
-{
-  "id": "398eb027",
-  "name": "John Doe",
-  "pages": [
-    {
-      "id": 1,
-      "title": "The Art of Flipping Coins",
-      "url": "http://example.com/398eb027/1"
-    },
-    { "id": 2, "deleted": true },
-    {
-      "id": 3,
-      "title": "Artichoke Salad",
-      "url": "http://example.com/398eb027/3"
-    },
-    {
-      "id": 4,
-      "title": "Flying Bananas",
-      "url": "http://example.com/398eb027/4"
-    }
-  ]
-}
-EOF
+#use "topfind";;
+#require "ppx_deriving_yojson";;
+
+
+
+type t = {x: int; y: int} [@@deriving to_yojson]
+type u = {s: string; pos: t} [@@deriving to_yojson]
+
+let item = {s= "hello"; pos={x= 1; y= 2}};;
+let () = print_endline (Yojson.Safe.pretty_to_string (u_to_yojson item))   (* 打印 json *)
