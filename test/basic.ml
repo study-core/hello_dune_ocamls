@@ -291,7 +291,7 @@ module M: sig .. end = struct .. end      (* module and signature *)
 
 module M = Unix                           (* module renaming *)
 
-module M = (Unix : LinuxType);;            (* 将 Unix 模块限制为 LinuxType 类型 (这里的 LinuxType 是未完全覆盖 Unix 成员内容的  module type sig)，并起别名  (将得到和 Unix 不太一样的模块) *)
+module M = (Unix : LinuxType);;            (* 将 Unix 模块限制为 LinuxType 类型 (这里的 LinuxType 是未完全覆盖 Unix 成员内容的  module type sig)，并起别名 M (将得到和 Unix 不太一样的模块) *)
 
 (* 写在 module xxx = struct 定义之内, 我觉得 *)
 include M                                 (* include items from *)
@@ -351,8 +351,8 @@ Patterns:
 
 x = y           (* (Structural) Polymorphic Equality *)             结构    相等
 x == y          (* (Physical) Polymorphic Inequality *)             物理    相等
-x <> y          (* (Structural) Polymorphic Equality *)             结构    不相等
-x != y          (* (Physical) Polymorphic Inequality *)             物理    不相等
+x <> y          (* (Structural) Polymorphic Equality *)             结构    不相等   (值)
+x != y          (* (Physical) Polymorphic Inequality *)             物理    不相等   (地址)
 compare x y     (* negative, when x < y *)
 compare x y     (* 0, when x = y *)
 compare x y     (* positive, when x > y *)   
