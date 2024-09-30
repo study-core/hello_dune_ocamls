@@ -195,21 +195,20 @@ let birthday p =
 
 
 (* 类型 *)
-  type record =               (* new record type *)
-  { field1 : bool;            (* immutable field *)
-    mutable field2 : int; }   (* mutable field *)
-  
-  type enum =                 (* new variant(变体) type *)
-    | Constant                (* Constant constructor *)
-    | Param of string         (* Constructor with arg*)
-    | Pair of string * int    (* Constructor with args *)
-    | Gadt : int -> enum      (* GADT constructor *)
-    | Inlined of { x : int }  (* Inline record *)  
+type record =               (* new record type *)
+{ field1 : bool;            (* immutable field *)
+  mutable field2 : int; }   (* mutable field *)
 
+type enum =                 (* new variant(变体) type *)
+  | Constant                (* Constant constructor *)
+  | Param of string         (* Constructor with arg*)
+  | Pair of string * int    (* Constructor with args *)
+  | Gadt : int -> enum      (* GADT constructor *)
+  | Inlined of { x : int }  (* Inline record *)  
 (* 值 *)
 
 let r = { field1 = true; field2 = 3; };;
-let r' = { r with field1 = false };;
+let r' = { r with field1 = false };;   (* 表示使用 r 的各个字段初始化 r'，但是 field1 字段设置为 false *)
 r.field2 <- r.field2 + 1 ;;
 let c = Constant;;
 let c = Param "foo";;
