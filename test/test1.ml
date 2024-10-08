@@ -93,6 +93,8 @@ end
 
 
 let expr = Typesafe_lang.(plus (int 3) (bool false));;
+
+
 (* 
 Error: This expression has type bool t but an expression was expected of type
          int t
@@ -117,7 +119,7 @@ Typesafe_lang.bool_eval expr;;
 
 
      
-(* 为 value 和 expr 类型加上 类型参数 *)
+(* 为 value 和 expr 类型加上 类型参数，     但是这样其实是不对的，这里只是做示例给我们看看的， 真正需要使用类似在  变体上使用 【类型参数】 则需要用 GADT 来实现 *)
 type 'a value =
   | Int of 'a
   | Bool of 'a
@@ -149,14 +151,28 @@ i 3 +: i 4;;
 所以还是会出错
    
 *)
-(* If (Eq (i 3, i 4), i 0, i 1);;
+
+
+(* 
+
+
+
+
+If (Eq (i 3, i 4), i 0, i 1);;
+
+
+
 (* 
 Error: This expression has type int expr
        but an expression was expected of type bool expr
        Type int is not compatible with type bool   
-*) *)
+*) 
 
-(* 结论：  普通变体不支持我们想要使用类型参数的方式  *)
+结论：  普通变体不支持我们想要使用类型参数的方式
+
+*)
+
+
 
 
 (* 
