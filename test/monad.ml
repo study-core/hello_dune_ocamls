@@ -4,8 +4,18 @@
 
 "monad" 这个名字来自范畴论的数学领域，它研究数学结构的抽象。
 
-Monad 通过在 Haskell 中的使用而在编程世界中流行起来, Haskell 开始通过 monad 设计模式来控制副作用的使用。   
+Monad 通过在 Haskell 中的使用而在编程世界中流行起来, Haskell 开始通过 monad 设计模式来 【避免副作用】 的使用。   
+
+
 Monad 用于模拟计算。将计算视为一个函数，它将输入映射到输出，但也做“更多事情”。
+
+
+
+
+
+
+但任何实用语言都不可能没有副作用。毕竟，打印到屏幕是一个副作用。因此 Haskell 开始通过 monad 设计模式来 【控制副作用】 的使用。
+
 
 
 
@@ -34,6 +44,7 @@ end
 
 
 (* https://cs3110.github.io/textbook/chapters/ds/monads.html *)
+
 
 
 
