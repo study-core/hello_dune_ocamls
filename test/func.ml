@@ -229,7 +229,7 @@ let ( .%[]<- ) = Bytes.set;;
 
 
 
-let str = "kally";;
+let str = "you";;
 
 (Bytes.of_string str).%[4] <- 'a';;   (* 等价于    Bytes.set (Bytes.of_string  str) 4 'a';;     *)
 

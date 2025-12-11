@@ -8,12 +8,11 @@
 type person = {
   name : string;
   age : int;
-  slave: string;
   } 
 [@@deriving to_yojson]
 
 (* Example person *)
-let my_person = { name = "Gavin"; age = 36; slave = "Kally" }
+let my_person = { name = "Gavin"; age = 36 }
 (* let xx = person_to_yojson my_person *)
 
 (* Convert person to JSON and store in a file *)
