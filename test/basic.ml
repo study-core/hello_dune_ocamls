@@ -137,6 +137,64 @@ List
 [false; true; false];;  (* - : bool list = [false; true; false] *)
 
 
+(* 定义一个整数列表 *)
+let int_list = [1; 2; 3; 4; 5];;
+
+(* 定义一个字符串列表 *)
+let string_list = ["apple"; "banana"; "cherry"];;
+
+(* 定义一个空列表 *)
+let empty_list = [];;
+
+(* 错误示例：混合类型会导致编译错误 *)
+(* let mixed_list = [1; "two"; 3.0];; *)
+
+(* List 是不可变的链表，适合使用模式匹配和递归操作 *)
+
+(* 如果您确实需要根据索引获取值（注意：这效率不高，因为需要遍历到该位置），可以使用标准库函数 List.nth *)
+
+
+let int_list = [10; 20; 30; 40; 50];;
+
+(* 获取索引 0 处的值 (第一个元素) *)
+let first = List.nth int_list 0;;
+(* first 现在是 10 *)
+
+(* 获取索引 3 处的值 (第四个元素) *)
+let fourth = List.nth int_list 3;;
+(* fourth 现在是 40 *)
+
+(* 索引越界会抛出 Failure("nth") 异常 *)
+(* let error = List.nth int_list 10;; *)
+
+
+(* 使用模式匹配来解构列表 【推荐】 *)
+
+let my_list = [1; 2; 3];;
+
+(* 使用模式匹配提取头部和尾部 *)
+match my_list with
+| [] -> Printf.printf "列表为空，没有头部和尾部\n"
+| head :: tail ->
+    Printf.printf "头部是: %d\n" head;
+    Printf.printf "尾部是: ";
+    List.iter (fun x -> Printf.printf "%d; " x) tail;
+    Printf.printf "\n";;
+
+
+(* 通常在函数定义中使用模式匹配来处理不同情况（空列表 vs 非空列表） *)
+let rec get_first_element list =
+  match list with
+  | [] -> failwith "Cannot get first element of an empty list"
+  | head :: tail -> head
+  (* 这是一个递归函数，但这里只取了第一个元素 *)
+
+let first_val = get_first_element my_list;;
+(* first_val 是 1 *)
+
+
+
+
 (* 
 ######################################################################################################################################################
 元组 
@@ -157,6 +215,40 @@ List
 ((1, 2), ('a', "str"));;
 
 
+(* 与数组使用 .( ) 访问不同，元组的元素不能通过索引号（如 0, 1, 2）直接访问。
+您必须使用特定的内置函数来提取元素。
+
+fst 和 snd 函数分别用于提取元组中的第一个和第二个元素。
+
+使用 fst 和 snd (仅限 2 元组)
+ *)
+
+let coordinate = (10, 20);;
+
+(* 获取第一个元素 *)
+let x = fst coordinate;;
+(* x 现在是 10 *)
+
+(* 获取第二个元素 *)
+let y = snd coordinate;;
+(* y 现在是 20 *)
+
+(* 尝试对 多于两个元素的元组使用 fst 或 snd 会导致编译错误 *)
+(* let name = fst student_info;; *)
+
+(* 也可以使用模式匹配来提取元组的元素 【推荐】*)
+
+let student_info = (12345, "Alice", 3.8);;
+
+(* 使用模式匹配提取所有值 *)
+let (id, name, gpa) = student_info in
+Printf.printf "Student ID: %d, Name: %s, GPA: %f\n" id name gpa;
+
+(* 如果您只需要特定的值，可以使用下划线 `_` 忽略不需要的元素 *)
+let (_, student_name, _) = student_info in
+Printf.printf "The student's name is: %s\n" student_name;
+
+
 
 (* 
 ######################################################################################################################################################
@@ -164,7 +256,7 @@ records  记录
 ######################################################################################################################################################
 *)
 
-type point = {x : float; y : float};;   (* 定义 type point = { x : float; y : float; } *)
+type point = {x : float; y : float};;   (* 定义 type point = { x : float; y : float; }  其实是起了个别名 point 而不是定义了新的类型 *)
 let a = {x = 5.0; y = 6.5};;  (* 实例化 val a : point = {x = 5.; y = 6.5} *)
 
 
@@ -208,14 +300,52 @@ type enum =                 (* new variant(变体) type *)
 (* 值 *)
 
 let r = { field1 = true; field2 = 3; };;
+
 let r' = { r with field1 = false };;   (* 表示使用 r 的各个字段初始化 r'，但是 field1 字段设置为 false *)
+
 r.field2 <- r.field2 + 1 ;;
+
 let c = Constant;;
 let c = Param "foo";;
 let c = Pair ("bar",3);;
 let c = Gadt 0;;
 let c = Inlined { x = 3 };;
 
+
+
+
+
+(* 当编译器面临歧义：data 的结构同时符合 block 和 tx 的定义。当有多个可能的具名类型别名时，编译器会选择最通用的底层类型，即匿名结构本身 *)
+type block = { hash : string };;
+type tx = { hash : string };;
+
+(* 默认推断为匿名 record *)
+let data = { hash = "xxx" };;
+
+let process_block (b: block) = Printf.printf "Processing block: %s\n" b.hash;;
+let process_tx (t: tx) = Printf.printf "Processing tx: %s\n" t.hash;;
+let process_data (d: {hash: string}) = Printf.printf "Processing data: %s\n" d.hash;;
+
+
+let () =
+  (* 临时将 data 视为 block 类型传入 【不推荐】 *)
+  process_block (data : block);
+
+  (* 临时将 data 视为 tx 类型传入 【不推荐】 *)
+  process_tx (data : tx);
+
+  (* 临时将 data 视为匿名记录类型传入 *)
+  process_data (data : {hash: string});
+;;
+
+
+let () =
+  let data : block = { hash = "xxx" } in (* 添加类型标注 【推荐】 *)
+  process_block data;
+
+let () =
+  let data : tx = { hash = "xxx" } in (* 添加类型标注 【推荐】 *)
+  process_tx data;
 
 (* 
 ######################################################################################################################################################
@@ -226,6 +356,9 @@ let c = Inlined { x = 3 };;
 let x = ref 3;;   (* integer reference (mutable) *)
 x := 4 ;;         (* reference assignation *)
 print_int !x;;  (* reference access *)
+
+
+
 (* 
 s.[0]  ;;         (* string char access *)
 t.(0)  ;;         (* array element access *)
@@ -255,24 +388,39 @@ Unix.(expr)             (* local open *)
 (* 
 
 let f x = expr                (* function with one arg *)
+
 let rec f x = expr            (* recursive function, apply: f x *)
+
 let f x y = expr              (* with two args, apply: f x y *)
+
 let f (x,y) = expr            (* with a pair as arg, apply: f (x,y) *)
+
 List.iter (fun x -> expr)     (* anonymous function *)
+
 let f = function None -> act  (* function definition *)
       | Some x -> act         (* function definition [by cases] *)
                               (* apply: f (Some x) *)
+
+
 let f ~str ~len = expr        (* with labeled args *)
                               (* apply: f ~str:s ~len:10 *)
                               (* apply: (for ~str:str):  f ~str ~len *)
+
+
 let f ?len ~str = expr        (* with optional arg (option) *)
+
+
 let f ?(len=0) ~str = expr    (* optional arg default *)
                               (* apply (with omitted arg): f ~str:s *)
                               (* apply (with commuting): f ~str:s ~len:12 *)
                               (* apply (len: int option): f ?len ~str:s *)
                               (* apply (explicitly omitted): f ?len:None ~str:s *)
-let f (x : int) = expr        (* arg has constrainted type *)
-let f : 'a 'b. 'a*'b -> 'a    (* function with constrainted *)
+
+
+let f (x : int) = expr        (* arg has constrainted<约束的> type *)
+
+
+let f : 'a 'b. 'a*'b -> 'a    (* function with constrainted<约束的> *)
       = fun (x,y) -> x        (* polymorphic type *)
    
 *)
@@ -285,21 +433,72 @@ let f : 'a 'b. 'a*'b -> 'a    (* function with constrainted *)
 *)
 
 (* 
-module M = struct .. end                  (* module definition *)
+module M = struct .. end                  (* module definition 无显示签名 *)
 
-module M: sig .. end = struct .. end      (* module and signature *)
+module M: sig .. end = struct .. end      (* module and signature 显示定义签名 【推荐】 *)
 
-module M = Unix                           (* module renaming *)
+module M = Unix                           (* module renaming  重命名 (将 Unix 模块重命名为 M) 起别名 M *)
 
 module M = (Unix : LinuxType);;            (* 将 Unix 模块限制为 LinuxType 类型 (这里的 LinuxType 是未完全覆盖 Unix 成员内容的  module type sig)，并起别名 M (将得到和 Unix 不太一样的模块) *)
 
-(* 写在 module xxx = struct 定义之内, 我觉得 *)
-include M                                 (* include items from *)
+
+include M                                 (* include items from 从别的 Module 中引入 *)
+
+
+module type OTHER_SIG = sig
+  val common_func : string -> unit
+  type data_t = int list
+end
+
+
+module OtherModule : OTHER_SIG = struct
+  let common_func s = Printf.printf "Common: %s\n" s
+  type data_t = int list
+end
+
+
+
+
+module MyModule : sig
+  (* 使用 include 引入 OTHER_SIG 的所有声明 *)
+  include OTHER_SIG
+
+  (* 添加 MyModule 自己的声明 *)
+  val foo : int
+  val specific_to_mymodule : data_t -> unit
+end = struct
+  (* 必须提供所有声明的实现 *)
+  include OtherModule (* 在实现部分，使用 include Module *)
+
+  let foo = 42
+
+  let specific_to_mymodule d_list =
+    Printf.printf "List length: %d\n" (List.length d_list)
+end
+
+(* 或者 *)
+
+module type MY_MODULE_SIG = sig
+  include OTHER_SIG
+  val foo : int
+end
+
+module MyModule : MY_MODULE_SIG = struct
+  include OtherModule
+  let foo = 42
+end
+
+
+
 
 module type Sg = sig .. end               (* signature definition *)
 
 module M = (struct ... end : Sg);;        (* module and signature *)
 module M : Sg = struct ... end;;          (* module and signature *)
+
+
+
+
 
 module type Sg = module type of M         (* signature of module *)
 

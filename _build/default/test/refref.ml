@@ -26,6 +26,7 @@ let () = !rr1 := !(!rr2);;  (* 竟然可以这样写等式 .....................
   - : int * int = (2, 2)
 *)
 (!r1, !r2);;
+
 let () = print_string ((string_of_int !r1) ^ (string_of_int !r2) ^ "\n");;
 
 
