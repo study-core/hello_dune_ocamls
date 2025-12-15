@@ -699,33 +699,50 @@ with
 
 (* 
 ######################################################################################################################################################
-对象和类
+对象和类  (不是重点，略过)
 ######################################################################################################################################################
 *)
 
 class virtual foo x =           (* virtual class with arg 抽象类 *)
+
   let y = x+2 in                (* init before object creation *)
+
   object (self: 'a)             (* object with self reference *)
+
   val mutable variable = x      (* mutable instance variable *)
+
   method get = variable         (* accessor *)
   method set z =
     variable <- z+y             (* mutator *)
+
   method virtual copy : 'a      (* virtual method *)
+
   initializer                   (* init after object creation *)
     self#set (self#get+1)
+
 end
 
 class bar =                     (* non-virtual class *)
+
   let var = 42 in               (* class variable *)
+  (* 构造函数参数 *)
   fun z -> object               (* constructor argument *)
+  (* 继承 foo 类，并引用父类的方法 *)
   inherit foo z as super        (* inheritance and ancestor reference  继承*)
+
+  (* 重写父类的方法 *)
   method! set y =               (* method explicitly overridden *)
     super#set (y+4)             (* access to ancestor *)
+  
+  (* 复制对象并修改其属性 *)
   method copy = {< x = 5 >}     (* copy with change *)
 end
-let obj = new bar 3 ;;            (* new object *)
+
+
+let obj = new bar 3 ;;          (* new object *)
+
 obj#set 4; obj#get              (* method invocation *)
-(* let obj = object .. end         (* immediate object *) *)
+(* let obj = object .. end      (* immediate object *) *)
 
 
 (* 
@@ -751,6 +768,276 @@ let f : [> t ] -> int = function  (* t is subtype of the argument *)
 *)
 
 
+(* 
+
+对于 ADT 中的 标准变体 来说他们是  关闭的 Closed Variant
+
+即： 他们只能包含他们定义时指定的标签，不能包含其他标签
+
+
+type food =
+  | Pizza
+  | Salad
+  | Pasta of string (* 意大利面可以指定酱料 *)
+
+对于 food 类型, 你只能点这三样。不能点“寿司”
+
+
+
+
+
+对于 多态变体来说     不需要在使用它们之前声明它们的类型   type xxx = ，而是直接写
+
+编译器会根据你使用的标签自动推断出一个多态变体类型
+
+(* 无需 type food_label = ... *)
+
+let order1 = `Pizza
+let order2 = `Sushi  (* 随时可以添加新的标签 *)
+
+
+
+多态变体的用途：
+
+1、轻量级标签和消息
+
+当你需要一个简单的标签，但又不想创建一个正式的 type 定义来污染命名空间时
+
+2、 模拟结构化类型
+
+先看 标准变体 的做法，再看 使用 多态变体 怎么实现结构化
+
+module M1 = struct
+  type status = Active | Inactive    (M1 使用了 标准变体)
+  let get_status = Active            (* 编译器推断 get_status 的类型是 M1.status 而不是 类型 status = Active | Inactive *)
+end
+
+module M2 = struct
+  type status = Active | Inactive    (M2 使用了 标准变体)
+  let get_status = Inactive          (* 编译器推断 get_status 的类型是 M2.status 而不是 类型 status = Active | Inactive *)
+end
+
+(* 尝试写一个通用函数来处理任何状态 *)
+let handle_status s =
+  match s with
+  | Active -> print_endline "Active"
+  | Inactive -> print_endline "Inactive"
+
+
+这时候执行:
+
+
+handle_status M1.get_status：可以运行。 
+handle_status M2.get_status：编译错误！
+
+因为： 编译器会选择它   首先遇到    的或当  前作用域中最容易   访问的那个类型
+      很明显应该选择 M1.status 而不是 M2.status (所以 handle_status M2.get_status：编译错误！)
+      当编译器选择了 M1.status 之后，它就无法再选择 M2.status 了，因为 M2.status 的类型不一致。
+
+
+为什么？ 对于 handle_status 来说， M1.get_status 和 M2.get_status 的类型不一致
+
+handle_status M1.get_status：M1.get_status 的类型是 M1.status
+handle_status M2.get_status：M2.get_status 的类型是 M2.status
+
+而 M1.status 和 M2.status 的类型不一致，所以编译错误。 因为 M1.status 和 M2.status 是两个不同名称的类型
+
+
+下面来看 使用 多态变体 怎么实现结构化
+
+
+module M1 = struct
+  let get_status = `Active (* 使用标签 *)
+end
+
+module M2 = struct
+  let get_status = `Inactive (* 使用标签 *)
+end
+
+(* 尝试写一个通用函数来处理任何状态 *)
+let handle_status s =
+  match s with
+  | `Active -> print_endline "Active"
+  | `Inactive -> print_endline "Inactive"
+  | _ -> () (* 开放性需要通配符 *)
+
+
+这时候执行:
+
+handle_status M1.get_status：可以运行。
+handle_status M2.get_status：可以运行。
+
+结构化体现在：handle_status 函数不关心 M1.get_status 和 M2.get_status 来自哪里，或者它们的完整类型叫什么名字。
+它只检查一个东西：它们的内部结构是否包含 `Active 或 `Inactive 标签？ (编译器将自动推断出它们的类型是 [> `Active | `Inactive ])
+
+
+(* 这个函数接受    任何包含 `Red 或 `Green 标签的类型  -----  只要某类型包含了 `Red 或 `Green 标签，它就可以被这个函数处理 *)
+let check_status (s : [ `Red | `Green ]) =
+  match s with
+  | `Red -> true
+  | `Green -> false
+
+
+3、实现鸭子类型（Duck Typing）
+
+先来 标准变体
+
+type animal = Dog | Duck | Cat (* 封闭集合 *)
+
+let speak = function
+  | Dog -> "Woof"
+  | Duck -> "Quack"
+  | Cat -> "Meow"
+
+但是对于多态变体来说，我们可以这样做：
+
+不要写 type animal = [ `Dog | `Duck | `Cat ]，编译器会自动推算出来 (显示的写出来也没问题)
+
+let speak = function
+  | `Dog -> "Woof"
+  | `Duck -> "Quack"
+  | `Cat -> "Meow"
+
+
+
+4、类继承的替代
+
+
+
+先看 class 做法
+
+(* OCaml 中的 OOP 示例，非主流风格 *)
+class virtual shape = object
+  method virtual area : float
+end
+
+class circle radius = object
+  inherit shape
+  val radius = radius
+  method area = Pervasives.pi *. radius *. radius
+end
+
+class rectangle w h = object
+  inherit shape
+  val width = w
+  val height = h
+  method area = width *. height
+end
+
+
+(* 这是一个列表，列表中的元素是 shape 类型，列表中的元素是 circle 类型和 rectangle 类型 *)
+let shapes = [ (new circle 2.0 : shape); (new rectangle 3.0 4.0 : shape) ]
+(* 计算总面积 *)
+let total_area = List.fold_left (fun acc s -> acc +. s#area) 0.0 shapes
+
+
+
+标准变体的做法
+
+(* 定义一个 shape 类型，它是一个标准变体，它包含了 Circle 和 Rectangle 两个标签 *)
+type shape =
+  | Circle of float
+  | Rectangle of float * float
+  (* 如果要添加三角形，在这里修改 *)
+
+(* 计算面积 *)
+let area = function
+  | Circle r -> Pervasives.pi *. r *. r
+  | Rectangle (w, h) -> w *. h
+
+
+与继承的对比：
+实现多态： area 函数通过模式匹配处理多种数据“形态”，实现了类似多态的效果。
+添加新操作更容易： 如果想添加 perimeter 函数，只需添加一个新的函数，而无需修改 type shape 定义。
+添加新变体更难： 如果想添加 Triangle，需要修改 type shape 以及 area 函数 以及 perimeter 函数。
+
+
+多态变体的做法
+
+
+(* 绘制函数只关心绘制相关的标签 *)
+let draw = function
+  | `Circle (x, y, r) -> Printf.printf "Draw circle...\n"
+  | `Rect   (x, y, w, h) -> Printf.printf "Draw rect...\n"
+  | _ -> print_endline "Unknown draw command"
+
+(* 移动函数只关心移动相关的标签 *)
+let move = function
+  | `Move_by (dx, dy) -> print_endline "Moving..."
+  | _ -> ()
+
+
+又有一个 Shape 抽象基类，Circle 和 Rectangle 继承它，并覆盖 draw() 方法。你需要管理对象的状态
+
+(* 1. 定义一个通用的消息类型 (Message Type)，这取代了类继承体系 *)
+type render_msg =
+  | `Draw_circle of float * float * float  (* x, y, radius *)
+  | `Draw_rect   of float * float * float * float (* x, y, w, h *)
+  | `Set_color   of string
+
+
+这比 类继承 更灵活，因为你可以随时添加新的消息（比如 Clear_screen ），而无需修改现有的  “类”
+
+*)
+
+
+
+
+
+
+
+(* 使用通配符 _ 来捕获所有未明确列出的多态变体标签 *)
+let process_colour colour =
+  match colour with
+  | `Red -> "Stop"
+  | `Green -> "Go"
+  | _ -> "Other status" (* 捕获 `Blue`, `Yellow` 或任何其他标签 *)
+
+
+
+(* 
+多态变体的限定
+
+
+(* 这是一个函数签名，这个函数可以接受任何类型，只要它至少包含 Green和 Red 这两个标签 *)
+val check_status : [> `Green | `Red ] -> bool = <fun>
+
+
+
+您展示了多态变体如何实现比标准变体更精细的类型控制：
+[< T ]：要求输入必须少于或等于 T 的标签（封闭，编译器检查所有情况）。
+[> T ]：要求输入必须多于或等于 T 的标签（开放，需要 _ 来处理未知情况）。
+
+
+(* 
+  只能处理 t 或比 t 更少的标签； 
+  必须是 t 类型的子集； 接受t的子类型（即标签比t少或等于t的类型）作为输入
+  只能传入 [A] 或 [B] 或 [A | B], 不能传入 [C] 
+*)
+let f : [< t ] -> int = function 
+  | `A -> 0 
+  | `B -> 1
+  (* 编译器知道只有这两个可能，不需要 _ *)
+
+
+(* 
+  必须至少能处理 t 包含的所有标签，但可以处理更多； 
+  必须包含 t 所有的标签（ A和 B），但可以有更多； 接受t的超类型（即标签比t多或等于t的类型）作为输入
+  可以传入 t 类型，也可以传入 v 类型（t 和 u 的组合，包含 A, B, C），因为 v 包含了 t 的所有标签 
+*)
+let f : [> t ] -> int = function 
+  | `A -> 0 
+  | `B -> 1 
+  | _ -> 2 (* 需要 _ 来捕获 `C` 或其他未知的标签 *)
+
+*)
+
+
+(* 
+######################################################################################################################################################   
+惰性求值
+######################################################################################################################################################
+*)
 
 
 (* 使用  _  代替泛型 *)
@@ -761,14 +1048,6 @@ let give_me_a_three _ = 3;;  (* val give_me_a_three : 'a -> int = <fun> *)
 give_me_a_three (1 / 0);;
 Exception: Division_by_zero.   
 *)
-
-
-(* 
-######################################################################################################################################################   
-惰性求值
-######################################################################################################################################################
-*)
-
 
 let lazy_expr = lazy (1 / 0);;  (* val lazy_expr : int lazy_t = <lazy> *)
 
