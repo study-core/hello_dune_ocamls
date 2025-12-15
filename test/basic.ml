@@ -808,12 +808,12 @@ let order2 = `Sushi  (* 随时可以添加新的标签 *)
 先看 标准变体 的做法，再看 使用 多态变体 怎么实现结构化
 
 module M1 = struct
-  type status = Active | Inactive    (M1 使用了 标准变体)
+  type status = Active | Inactive    (* M1 使用了 标准变体 *)
   let get_status = Active            (* 编译器推断 get_status 的类型是 M1.status 而不是 类型 status = Active | Inactive *)
 end
 
 module M2 = struct
-  type status = Active | Inactive    (M2 使用了 标准变体)
+  type status = Active | Inactive    (* M2 使用了 标准变体 *)
   let get_status = Inactive          (* 编译器推断 get_status 的类型是 M2.status 而不是 类型 status = Active | Inactive *)
 end
 
@@ -981,11 +981,6 @@ type render_msg =
 *)
 
 
-
-
-
-
-
 (* 使用通配符 _ 来捕获所有未明确列出的多态变体标签 *)
 let process_colour colour =
   match colour with
@@ -1087,11 +1082,16 @@ Lazy.force lazy_expr;;   (* Exception: Division_by_zero. *)
 
 (* 
 
-在 stdlib.ml 中定义了  反向运算符
+在 stdlib.ml 中定义了  反向运算符 : 即 |> 和 @@  运算符
 
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
 *)
-(@@);;   (* - : ('a -> 'b) -> 'a -> 'b = <fun> *)
+
+(* 它接收左侧的值 x，然后将其作为参数传递给右侧的函数 f *)
+10 |> (fun x -> x + 1) ;;   (* - : int = 11 *)
+
+(* 它接收右侧的值 x，然后将其作为参数传递给左侧的函数 f *)
+(fun x -> x + 1) @@ 10 ;;   (* - : int = 11 *)
