@@ -545,7 +545,7 @@ let process_data data_list =
 
 let m = (module M : Sg)                   (* to 1st-class module 【打包】   【将普通模块转换成第一类模块】 (从模块到值) *)
 module M = (val m : Sg)                   (* from 1st-class module 【解包】   【将第一类模块转换回普通模块】  (从值到模块) *)
-
+let module M = (val m : Sg) in M.x;;      (* 将第一类模块转换回普通模块，并绑定到一个临时的 Module M 上，并使用点语法访问其内容 *)
 
 (* 【打包】：  将一个现有的、静态定义的模块 M 封装到一个可以在运行时传递的普通 OCaml 值 m 中 *)
 

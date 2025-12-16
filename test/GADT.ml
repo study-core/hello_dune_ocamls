@@ -304,6 +304,8 @@ GADT 的缺点之一，即：  使用它们的代码需要额外的  【类型�
         val eval_value : 'a value -> 'a = <fun>
 
   函数  eval_value 定义(去使用 GADT  类型  value 时)需要加 【类型注释】  type a. a value -> a
+
+  ('a 和 (type a) 和 type a. 的区别请看 a_type_a.ml 文件)
 *)
 let eval_value : type a. a value -> a = function
   | Int x -> x
@@ -359,7 +361,10 @@ let eval_value (type a) (v : a value) : a =
   | Bool x -> x;;
 
 (* 
-   但是在 eval 函数中 对 type a. a expr -> a 添加 【本地抽象类型】 报错
+   但是在 eval 函数中 对 type a. a expr -> a 添加 【本地抽象类型  (type a)】 报错，
+   因为在 递归函数中  (type a) 将会失效，详细请看 a_type_a.ml 文件
+
+   ('a 和 (type a) 和 type a. 的区别请看 a_type_a.ml 文件)
 *)
 let rec eval (type a) (e : a expr) : a =
   match e with

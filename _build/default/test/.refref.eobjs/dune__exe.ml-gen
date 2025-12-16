@@ -3,6 +3,9 @@
 (** @canonical Dune__exe.ADTs *)
 module ADTs = Dune__exe__ADTs
 
+(** @canonical Dune__exe.A_type_a *)
+module A_type_a = Dune__exe__A_type_a
+
 (** @canonical Dune__exe.Aliase *)
 module Aliase = Dune__exe__Aliase
 

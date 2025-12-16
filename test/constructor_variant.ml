@@ -207,7 +207,7 @@ let a = `Hoge;;
 *)
 
 (* 
-  常规 变体 做法   
+  常规(标准) 变体 做法   
 *)
 type basic_color =
    | Black | Red | Green | Yellow | Blue | Magenta | Cyan | White ;;
@@ -252,7 +252,7 @@ let extended_color_to_int = function
   可以解决上述问题
 *)
 
-
+(* 显示的声明  多态变体 的类型 *)
 type weight = [`Regular | `Bold] ;; 
 
 type basic_color =
@@ -374,13 +374,6 @@ let extended_color_to_int : extended_color -> int = function
 
 (* OCaml ∗ variants-termcol/terminal_color.ml ∗ all code *)
 
-(* 
-      ###################################################################
-      ###################################################################
-      ######### 能用 常规变体就用常规变体，不要轻易用 多态变体  #########
-      ###################################################################
-      ###################################################################
-*)
 
 
 
