@@ -729,8 +729,8 @@ module MyBox : PLAIN_BOX = struct
   let reveal n = string_of_int n
 end
 
-let x : MyBox.t = 10;;
-let x : MyBox.int = 10;;
+let x : MyBox.t = 10;;  (* 这个是不对的，应该 ❌ 报错：Unbound type constructor MyBox.t *)
+let x : MyBox.int = 10;; (* 这个是不对的，应该 ❌ 报错：Unbound type constructor MyBox.int (int 是全局类型，不是 MyBox 的成员) *)
 
 
 (* 
