@@ -18,6 +18,7 @@ match Some 42 with None -> raise Exit | Some x -> x;;
 
 
 (* 在 OCaml 的顶层 topup 中可以使用  #show xxx 查看 xxx 的定义 *)
+#use "topfind";;
 
 (* type 'a option = None | Some of 'a *)
 #show option;;

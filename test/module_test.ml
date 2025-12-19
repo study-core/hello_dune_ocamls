@@ -11,7 +11,7 @@
     module Hello : sig    val message : string     val hello : unit -> unit    end  
 
 
-    模块的类型定义： (函子)
+    模块的类型定义：
 
     module type ELEMENT = sig type t val compare : t -> t -> int end
     
@@ -84,11 +84,9 @@ Hello.hello ();;
 (* 
 ****************************************************************************************************************************************
 
-    OCaml 的 module 其实有点像  Rust 的 Trait 的， 个人总结， 
+    OCaml 的 module type 其实有点像  Rust 的 Trait 的， 个人总结， 
     
     特别是           sig  type x ... end 
-
-    和看完 functor 函子部分的使用就更加这么觉得了
 
 
 

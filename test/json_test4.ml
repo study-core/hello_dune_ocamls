@@ -1,8 +1,15 @@
+(* 
+
+这里使用 Yojson
+
+
+
+opam install ppx_deriving_yojson  安装
+
+*)
 #use "topfind";;
 #require "ppx_deriving_yojson";;
-(* #require "yojson";; *)
-
-(* open Yojson;; *)
+#require "yojson";;
 
 (* Define an OCaml type *)
 type person = {
@@ -24,5 +31,5 @@ let store_person_as_json_file filename person =
   output_string oc json_str;
   close_out oc
 
-(* Usage *)
+(* 在项目根目录生成 person.json 文件 *)
 let () = store_person_as_json_file "person.json" my_person

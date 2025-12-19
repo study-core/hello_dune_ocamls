@@ -1,2 +1,5 @@
-(test
- (name refref))
+(library
+ (name hello_ocamls)
+ (public_name hello_ocamls)
+ (libraries base)                ; 声明使用 Base 库
+ (preprocess (pps ppx_jane)))    ; 启用 [@@deriving sexp] 所在的预处理器

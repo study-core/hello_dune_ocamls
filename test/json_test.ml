@@ -8,7 +8,8 @@ opam install yojson  安装
 
 *)
 
-(* 使用 *)   (**  一定需要先这样使用，才可以用  *)
+(* 使用 TOPLEVEL 指令 ， 才能使用 Yojson 库 *)
+(**  一定需要先这样使用，才可以用  *)
 #use "topfind";;
 #require "yojson";;  
 open Yojson;;

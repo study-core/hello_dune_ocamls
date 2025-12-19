@@ -465,3 +465,5 @@ let () =
   (* 调用动态分发函数 *)
   dynamic_dispatch f_value a_value
   (* 打印结果: hello (由 Res.execute "hello" 产生) *)
+
+

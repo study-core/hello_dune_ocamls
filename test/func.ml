@@ -1,6 +1,13 @@
 (* 
 ######################################################################################################################################################
 函数
+
+
+fun 和 function 的区别
+
+fun 可以接受多个参数
+function 只能接受一个参数
+
 ######################################################################################################################################################
 *)
 
@@ -15,11 +22,18 @@
 val even : int -> bool = <fun>
 val odd : int -> bool = <fun> 
 *)
+(* 
+  let rec ... and ... 是一个整体声明
+
+  关键字 and 的作用是延续前一个 let 的属性
+
+  如果写了 let rec ... and rec odd ... 编译器反而会报语法错误，因为 and 已经包含了递归的含义
+*)
 let rec even n =
   match n with
   | 0 -> true
   | x -> odd (x-1)
-and odd n =                (* 妈的， odd 这个不需要 rec ？？？ *)
+and odd n =                (* 所以， odd 这个不需要 rec *)
   match n with
   | 0 -> false
   | x -> even (x-1);;
@@ -113,39 +127,7 @@ int - > int - > int - > int = <fun>  即为 int - >（int - >（int - > int）�
 
 
 
-(* 
-   
-
-let begin_page cgi title =
-  let out = cgi # output # output_string in
-  out "<html>\n";
-  out "<head>\n";
-  out ("<title>" ^ text title ^ "</title>\n");
-  out ("<style type=\"text/css\">\n");
-  out "body { background: white; color: black; }\n";
-  out "</style>\n";
-  out "</head>\n";
-  out "<body>\n";
-  out ("<h1>" ^ text title ^ "</h1>\n")
-
-
-
-  其中 cgi # output # output_string "string" 是一个方法调用，类似于Java中的 cgi.output().output_string ("string")
-
-  则 out 是 柯里化函数
-
-  let out = ... 是该方法调用的部分函数应用程序（部分，因为尚未应用字符串参数）。因此， out 是一个函数，它接受一个字符串参数
-
-
-  这里为 out  即是 cgi # output # output_string 的别名， 而完整的使用应为：
-
-
-  cgi # output # output_string  "字符串"  也就是    out  "字符串"
-
-*)
-
-
-let  f1 x  =  x +1
+let  f1 x  =  x + 1
 
 let mf1 x y z = x + y + z
 
@@ -158,7 +140,7 @@ let  f2  = function x -> x +1;;
 
 let mf2 = function x -> (function y -> (function z -> x + y + z));;  (* 类型为： val mf2 : int -> int -> int -> int 可应用于 偏函数 *)
 
-let mf2_tuple = function (x, y, z) -> x + y + z;;  (* 类型为 val mf2_tuple : int*int*int -> int 不可应用于 偏函数*)
+let mf2_tuple = function (x, y, z) -> x + y + z;;  (* 类型为 val mf2_tuple : int*int*int -> int 不可应用于 偏函数<柯里化> *)
 
 (* 
 ######################################################################################################################################################

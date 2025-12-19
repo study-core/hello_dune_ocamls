@@ -1,7 +1,16 @@
+(* 
+
+这里使用 Yojson
+
+
+
+opam install ppx_deriving_yojson  安装
+
+*)
+
 #use "topfind";;
 #require "ppx_deriving_yojson";;
-
-
+#require "yojson";;
 
 type t = {x: int; y: int} [@@deriving to_yojson]
 type u = {s: string; pos: t} [@@deriving to_yojson]

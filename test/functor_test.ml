@@ -16,20 +16,12 @@
 
 
 
-函子几乎就是一个模块，只不过它需要应用于模块。这会将其变成一个模块。从这个意义上说，函子允许    模块参数化
+functor 几乎就是一个 module ，只不过它需要应用于 module . 这会将其变成一个 module .  functor 其实就是 module factory 咯
 
 
 
 
-OCaml 接口文件 ( .mli ) 必须是模块，而不是函子；                   函子必须嵌入模块内 (.mi) 
-
-######################################################################################################################################################
-
-
-    【函数器】本质上是根据        其他模块         编写       模块       的一种方式
-
-    【仿函数】是一个由【另一个模块】参数化的模块，
-    就像【函数】是一个由【其他值】（参数）参数化的值一样
+OCaml 接口文件 ( .mli ) 必须是 module，而不是 functor；                   functor 必须嵌入 模块内 (.mi) 
 
 
 ######################################################################################################################################################
@@ -72,7 +64,7 @@ OCaml 接口文件 ( .mli ) 必须是模块，而不是函子；                
 *)
 
 (* 
-    签名定义  (也是 命名模块类型 (模块类型定义))
+    module 的类型定义
     (查看 module_test.ml 文件对比)
 
     module type ELEMENT = sig      type t     val compare : t -> t -> int     end
@@ -92,7 +84,7 @@ end
 
     语法： 
     
-    (* X 是将作为参数传递的模块， X_type 是它的签名 *)
+    (* X 是入参的 module， X_type 是 module 的类型 *)
 
     ********************************************************************
     module F (X : X_type) = struct   
@@ -100,7 +92,7 @@ end
     end
     ********************************************************************
 
-    或者
+    或者 指定返回 module 的类型
 
     ********************************************************************
     module F (X : X_type) : Y_type = struct
@@ -116,7 +108,7 @@ end
 
     如：
 
-    定义函子的类型: (语法糖形式)
+    定义 functor 的类型: (语法糖形式)
 
     module type MakeSetType = functor (Element : ELEMENT) ->
       sig
@@ -129,7 +121,7 @@ end
       end
 
 
-    直接定义函子: (语法糖形式)
+    直接定义 functor <无需先定义 functor 的类型>: (语法糖形式)
 
     module MakeSet = functor (Element : ELEMENT) ->
       struct
@@ -166,16 +158,19 @@ end
 
 又如:
 
-
+(* 先定义 module 的类型 *)
 module type OrderedType = sig
   type t
   val compare : t -> t -> int
 end
 
 
-下面是入参为: functor (Ord : OrderedType); 返参为: Set.S 的函子 Make
+下面是入参是类型为: functor (Ord : OrderedType) 的 functor; 返参为: Set.S 类型的 module 的函子 Maker
 
-module Make : functor (Ord : OrderedType) -> Set.S           其中  Set.S  是 Set 模块中定义的某个  module type 签名类型
+其中  Set.S  是 module 类型 Set 中的某个子  module 类型
+
+
+module Maker : functor (Ord : OrderedType) -> Set.S           
 
 
 
@@ -193,10 +188,12 @@ module MakeSet (Element : ELEMENT) =
     type elt = Element.t  (* 使用 ELEMENT 的 t 作为 elt *)
     type t = elt list  (* 自己的 t 则是 elt list 也就是 ELEMENT.t list *)
 
-    let empty = []  (* empty 函数 *)
+    (* 定义一个 空 list *)
+    let empty = []
 
     let mem x set = List.exists (fun y -> Element.compare x y = 0) set
 
+    (* add 函数的签名为: elt -> elt list -> elt list *)
     let rec add elt = function  (* 往 list 中添加新元素的 add 函数 *)
                             | [] -> [elt]
                             (* 从 list 中的 首元素 开始 比较 *)
@@ -218,7 +215,7 @@ module MakeSet (Element : ELEMENT) =
 (* 
 ****************************************************************************************************************************************
 
-    使用函子实例化一个  String 类型的 StringSet module：
+    使用 functor 实例化一个  String 类型的 StringSet module：
 
     module StringSet :
       sig
@@ -233,30 +230,30 @@ module MakeSet (Element : ELEMENT) =
 ****************************************************************************************************************************************      
 *)
 
-module StringSet = MakeSet(struct
+module StringSet = MakeSet(struct  (* 入参一个匿名 module ，该 module 的类型 会被编译器推断为 ELEMENT *)
     type t = string
-    let compare = compare
+    let compare = compare (* 使用 stdlib.ml 中的 compare 函数 *)
   end);;
 
 
 
 (* 
 ######################################################################################################################################################
-具备返回值的写法
+具备返回值的 functor 写法
 ######################################################################################################################################################
 *)
 
 
 (* 
-    module 名称 (参数名称 : 输入签名表达式)  : 签名表达式返回 = 模块表达式   
-
+    module 名称 (参数名称 : 输入签名表达式)  : 签名表达式返回 = 模块表达式
 *)
 module MakeSet (Element : ELEMENT) :
 
-  (* 签名表达式返回 *)
+  (* 返回 module 的类型匿名 *)
   sig
     type elt = Element.t
     type t (* 抽象数据类型，类似 rust 的  关联类型 *)
+    val empty : t
     val mem : elt -> t -> bool
     val add : elt -> t -> t
     val elements : t -> elt list
@@ -271,9 +268,10 @@ module MakeSet (Element : ELEMENT) :
     type elt = Element.t
     type t = elt list
 
+    (* 定义一个 空 list *)
     let empty = []
 
-    let mem x set = List.exists (fun y -> Element.compare x y = 0) set
+    let mem x list = List.exists (fun y -> Element.compare x y = 0) list
 
     let rec add elt = function
     | [] -> [elt]
@@ -306,18 +304,18 @@ module MakeSet (Element : ELEMENT) :
 
 ****************************************************************************************************************************************      
 *)
-module IntSet = MakeSet(struct
+module IntSet = MakeSet(struct   (* 入参一个匿名 module ，该 module 的类型 会被编译器推断为 ELEMENT *)
     type t = int
     let compare i j = i - j
   end);;
 
 
+
+open IntSet;; (* 类似 rust 的 use *)
 (* 
     val s1 : IntSet.t = <abstr> (* 抽象数据类型 *)
     val s2 : IntSet.t = <abstr>   
 *)
-open IntSet;; (* 类似 rust 的 use *)
-
 let s1 = add 1 (add 2 empty) and s2 = add 3 (add 4 empty);;
 
 
@@ -325,7 +323,7 @@ let s1 = add 1 (add 2 empty) and s2 = add 3 (add 4 empty);;
 
 ****************************************************************************************************************************************
     
-    使用函子实例化一个  String  类型的 StringSet module 并返回 (可以用变量接收该返回 module 的值)：
+    使用 functor 实例化一个  String  类型的 StringSet module 并返回 (可以用变量接收该返回 module 的值)：
 
     module StringSet :
       sig
@@ -344,11 +342,12 @@ module StringSet = MakeSet(struct
     let compare i j = 0
   end);;
 
+
+open StringSet;;
 (* 
     val s1 : StringSet.t = <abstr> (* 这是一个抽象的数据类型 *)
     val s2 : StringSet.t = <abstr>
 *)
-open StringSet;;
 let s1 = add "a" (add "b" empty) and s2 = add "c" (add "d" empty);;
 
 
@@ -532,7 +531,7 @@ module String_set :
 *)
 module String_set =
   Set.Make (struct
-              type t = String
+              type t = string
               let compare = compare
             end);;
            
@@ -564,7 +563,7 @@ module String_set =
 
 
 
-【我 TM 到现在都不知道 有返回值的 functor 和 无返回值的 functor 的区别】
+【functor 肯定是有返回值的】因为 functor 就是生成新 module 的，返回类型就是 module type， 只是在语法糖上有没有明着写出来的区别
 
 *******************************************
 *)
@@ -573,10 +572,12 @@ module type X_int = sig val x : int end;;
 
 (* 
 
-定义 声明了 返回 module类型的函子
+【1】、定义 声明了 返回 module类型的 functor
 
 
 module Increment : functor (M : X_int) -> X_int
+
+其中 X_int 的类型为: sig val x : int end
 
 *)
 module Increment1 (M : X_int) : X_int = struct
@@ -585,7 +586,7 @@ end;;
 
 (* 
    
-定义 无声明 返回 module类型的函子
+【2】、定义 无声明 返回 module类型的函子
 
 
 module Increment : functor (M : X_int) -> sig val x : int end
@@ -595,6 +596,8 @@ module Increment2 (M : X_int) = struct
   let x = M.x + 1
 end;;
 
+
+(* 上面的 【1】和 【2】 是等价的 *)
 
 (* 适用函子 定义新 module *)
 module Three = struct let x = 3 end;;
@@ -616,6 +619,8 @@ print_int (Four2.x - Three.x);;   (*  1  *)
 module type Comparable = sig
   type t
   val compare : t -> t -> int
+
+  (* val print : out_channel -> t -> unit *)
 end;;
 
 
@@ -650,27 +655,30 @@ module Make_interval(Endpoint : Comparable) = struct
     | Empty -> true
     | Interval _ -> false
 
-  (** [contains t x] returns true iff [x] is contained in the
+  (** [contains t x] returns true if [x] is contained in the
       interval [t] *)
   let contains t x =
     match t with
     | Empty -> false
-    | Interval (l,h) ->
+    | Interval (l, h) ->
       Endpoint.compare x l >= 0 && Endpoint.compare x h <= 0
 
   (** [intersect t1 t2] returns the intersection of the two input
       intervals *)
   let intersect t1 t2 =  (* 求交集 *)
+    (* 第一个 in 表示 min 函数会在后续的代码 (即 let ... match ...) 中被使用 *)
     let min x y = if Endpoint.compare x y <= 0 then x else y in
+    (* 第二个 in 表示 max 函数会在后续的代码 (即 match ...) 中被使用 *)
     let max x y = if Endpoint.compare x y >= 0 then x else y in
     match t1,t2 with
     | Empty, _ | _, Empty -> Empty
     | Interval (l1,h1), Interval (l2,h2) ->
+      (* 所以最终在这使用了 min 函数和 max 函数 *)
       create (max l1 l2) (min h1 h2)
   
   (* let print = function
   | Empty -> print_endline "nothing"
-  | Interval (l, h) -> Printf.printf "%a " l *)
+  | Interval (l, h) ->  Printf.printf "Interval(%a, %a)\n" Endpoint.print l Endpoint.print h *)
 
 end;;
 
@@ -680,6 +688,7 @@ module Int_interval =
   Make_interval(struct
     type t = int
     let compare = Int.compare       (* 使用 Int 的 compare 函数定义 compare 函数*)
+    (* let print out x = output_string out (string_of_int x) *)
 end);;
 
 
@@ -687,6 +696,7 @@ module String_interval =
   Make_interval(struct
     type t = string
     let compare = String.compare    (* 使用 String 的 compare 函数定义 compare 函数*)
+    (* let print out x = output_string out x *)
 end);;
 
 
@@ -694,6 +704,7 @@ module Float_interval =
   Make_interval(struct
     type t = float
     let compare = Float.compare     (* 使用 Float 的 compare 函数定义 compare 函数*)
+    (* let print out x = output_string out (string_of_float x) *)
 end);;
 
 
@@ -738,7 +749,7 @@ Rev_int_interval.t 与 Int_interval.t 是不同的类型，尽管其物理表示
 Error: This expression has type Rev_int_interval.t
        but an expression was expected of type Int_interval.t
 *)
-Int_interval.contains rev_interval 3;;
+(* Int_interval.contains rev_interval 3;; *)
 
 
 
@@ -755,9 +766,12 @@ Make_interval 有问题。我们编写的代码取决于区间上限大于下限
 该不变量由 create 函数强制执行，但由于 Int_interval.t 不是抽象的，因此我们可以绕过 create 函数:
 
 *)
-Int_interval.is_empty (Int_interval.create 4 3);;   (* going through create *)
 
-Int_interval.is_empty (Int_interval.Interval (4,3));;  (* by passing create, 【这 可以绕过 create 函数去直接创建  Int_interval.t 实例】！！！！！！！！！！ *)
+(* going through create, 使用 create 函数创建 Empty , 因为  4 > 3 low > high *)
+Int_interval.is_empty (Int_interval.create 4 3);;   
+
+(* by passing create, 【这 可以绕过 create 函数去强行直接创建  Interval 实例】 而不是因为 4 > 3 而生成 Empty *)
+Int_interval.is_empty (Int_interval.Interval (4, 3));;  
 
 
 (* 
@@ -776,9 +790,9 @@ module type Interval_intf =
   end
 
 *)
-
+(* 定义一个对外的接口，把 t 声明为抽象的 *)
 module type Interval_intf = sig
-  type t
+  type t          (* 注意：这里不写具体构造器，外部就看不见了 *)
   type endpoint
   val create : endpoint -> endpoint -> t    (* 让 create 入参不再是  Endpoint.t， 而是  endpoint *)
   val is_empty : t -> bool
@@ -793,9 +807,28 @@ end;;
 
 module Make_interval : functor (Endpoint : Comparable) -> Interval_intf
 *)
+(* 
+    这里必须是 (Interval_intf with type endpoint = Endpoint.t) 而不是 Interval_intf， 
+    不然编译器会 抹掉了 endpoint = Endpoint.t 这个事实, 当你用
+
+              module Int_interval =
+                Make_interval(struct
+                  type t = int
+                  let compare = Int.compare       (* 使用 Int 的 compare 函数定义 compare 函数*)
+                  (* let print out x = output_string out (string_of_int x) *)
+              end);;
+              
+              (* 
+              
+              错误信息:
+              Error: This expression has type elt but an expression was expected of type Int_interval.endpoint
+              *)
+              Int_interval.create 3 4;;    (* 会报错，因为 endpoint 类型被抹掉了 *)
+    就会报错. 因为 Int_interval.endpoint 在编译器眼里是一个全新的、神秘的类型，它不等于 int
+    *)
 module Make_interval(Endpoint : Comparable) : Interval_intf = struct
   type endpoint = Endpoint.t
-  type t = | Interval of Endpoint.t * Endpoint.t
+  type t = | Interval of endpoint * endpoint
            | Empty
 
   (** [create low high] creates a new interval from [low] to
@@ -829,7 +862,6 @@ module Make_interval(Endpoint : Comparable) : Interval_intf = struct
 
 end;;
 
-
 (* 
 *******************************************  
 共享限制
@@ -846,12 +878,6 @@ end;;
 module Int_interval = Make_interval(Int);;
 
 
-
-
-
-
-
-
 (* 
 
 因为上面还没有公开  endpoint 类型，所以 直接使用 create endpoint  endpoint 时会报错的
@@ -862,7 +888,7 @@ module Int_interval = Make_interval(Int);;
 Error: This expression has type elt but an expression was expected of type
          Int_interval.endpoint
 *)
-Int_interval.create 3 4;;
+(* Int_interval.create 3 4;; *)
 
 
 (* 
@@ -884,6 +910,8 @@ Int_interval.create 3 4;;
 该表达式的结果是一个经过修改的新签名，以便它公开了这样一个事实：在模块类型内部定义的 type 等于在模块类型外部定义的 type'
 *)
 
+
+(* 定义一个使用了 【共享约束】 的 functor 的类型 *)
 module type Int_interval_intf =
 Interval_intf with type endpoint = int;;   (* 将 Interval_intf 中的  endpoint 类型 【公开】 为 int *)
 (* 
@@ -903,8 +931,7 @@ module type Int_interval_intf =
 
 
 (* 
-我们还可以在函子的上下文中使用共享约束。最常见的用例是您  想要公开函子生成的模块 的某些类型 与 提供给函子的模块中的类型相关。
-
+或者 我们直接在 functor 定义中直接使用【共享限制】。
 
 
 
@@ -1003,17 +1030,23 @@ Int_interval.contains i 5;;
 
 共享限制缺点：
 
-特别是，我们现在一直被 endpoint 的无用类型声明所困扰，它使接口和实现都变得混乱。
+特别是，我们现在一直被 endpoint 的无用类型声明所困扰，
+它使 functor 类型和 functor 实现都变得混乱 
+
+即使用了 Interval_intf with type endpoint = Endpoint.t 后面还得写 endpoint = Endpoint.t ， 这就很混乱
 
 
 
 解决方案：
 
 
-修改 Interval_intf 签名，在出现的所有位置将 endpoint 替换为 Endpoint.t ，并从签名中删除 endpoint 的定义。 ( 这不又回到 共享限制  前的实现了么 ???  共享实现 就是为了解决它的呀 ！！！ 尼玛)
+修改 Interval_intf 签名，在出现的所有位置将 endpoint 替换为 Endpoint.t ，并从签名中删除 endpoint 的定义。
 
+注意不是在代码中写  type endpoint = Endpoint.t ， 而是用【破坏性替换】  <Module_type> with type <type> := <type'>
 
-(----------------- 可以知道， 并不是真正回到  共享限制  前的定义， 而是通过  破坏性替代  来实现的 -----------------)
+如下面即将用到的:    with type endpoint := int
+
+(----------------- 不是真正回到  【共享限制】  之前的定义， 而是通过  【破坏性替代】  来实现的 -----------------)
 我们可以使用所谓的破坏性替代来做到这一点。这是基本语法：
 
 
@@ -1116,11 +1149,12 @@ module Make_interval :
    
 到目前为止， 
 
-接口正是我们想要的： 【t 类型是抽象的，端点的类型是公开的】
+接口正是我们想要的： 【t 类型是抽象的， enpoint 的类型是公开的】
 
 
 
-因此我们可以使用创建函数创建 Int_interval.t 类型的值，但不能直接使用 构造函数  (即 不能 Int_interval.Interval(l, h) 这样用)，从而违反了模块的 不变量。
+因此我们可以使用创建函数创建 Int_interval.t 类型的值，
+但不能直接使用 构造函数  (即 不能 Int_interval.Interval(l, h) 这样用)，从而违反了模块的 不变量。
 
 *)
 
@@ -1143,7 +1177,7 @@ module Int_interval = Make_interval(Int);;
 Int_interval.is_empty  (Int_interval.create 3 4);;
 
 (* Error: Unbound constructor Int_interval.Interval *)
-Int_interval.is_empty (Int_interval.Interval (4,3));;   (* 不能直接使用 构造函数 *)
+(* Int_interval.is_empty (Int_interval.Interval (4,3));;   (* 不能直接使用 构造函数 *) *)
 
 (* 
    
@@ -1169,10 +1203,6 @@ Int_interval.is_empty (Int_interval.Interval (4,3));;   (* 不能直接使用 �
 我们可能希望间隔模块具有的另一个功能是序列化的能力，即能够以字节流的形式读取和写入间隔。
 
 
-由于 函子 不能和 ppx 一起使用  (是吗 ?????)  (但是貌似  module type  的 sig 中可以由 ppx) 如：
-
-          module type M = sig type t [@@deriving sexp] end;;
-
 *)
 
 
@@ -1185,20 +1215,21 @@ val some_type_of_sexp : Sexp.t -> some_type = <fun>
 val sexp_of_some_type : some_type -> Sexp.t = <fun>
 
 *)
-sexp_of_some_type (33, ["one"; "two"]);;
+(* sexp_of_some_type (33, ["one"; "two"]);;
 
-Core.Sexp.of_string "(44 (five six))" |> some_type_of_sexp;;
+Core.Sexp.of_string "(44 (five six))" |> some_type_of_sexp;; *)
 
 
 (* 
-   将 ppx  放入函子中  会报错 
+
+下面的代码会报错  代码在语法结构上是可行的，但要让它真正跑通且不报错
    
 Error: Unbound value Endpoint.t_of_sexp
 
 
+核心矛盾：Endpoint.t 是否支持 S-expression (Sexp)
 
-
-问题在于 [@@deriving sexp] 添加了用于定义 s 表达式转换器的代码，并且该代码假定 Endpoint 具有适用于 Endpoint.t 的适当的 sexp 转换函数。
+因为 [@@deriving sexp] 添加了用于定义 s 表达式转换器的代码，并且该代码假定 Endpoint 具有适用于 Endpoint.t 的适当的 sexp 转换函数。
 
 但我们对 Endpoint 的了解只是它满足 Comparable 接口，而该接口没有提及任何有关 s 表达式的信息。
 *)
@@ -1209,7 +1240,7 @@ module Make_interval(Endpoint : Comparable)
            | Empty
 
            
-  [@@deriving sexp]     (*  【这里是不可行的】  *)
+  [@@deriving sexp]     (*  【这里是不可行的】 Error: Unbound value Endpoint.t_of_sexp *)
 
   (** [create low high] creates a new interval from [low] to
       [high].  If [low > high], then the interval is empty *)
@@ -1274,6 +1305,13 @@ module type Interval_intf_with_sexp =
     val sexp_of_t : t -> Sexp.t
   end   
 *)
+
+#use "topfind";;
+#require "base";;
+#require "ppx_jane";;
+open Base;;
+
+
 
 module type Interval_intf_with_sexp = sig
   type t
@@ -1378,10 +1416,6 @@ module Int_interval :
 Int_interval.sexp_of_t (Int_interval.create 3 4);;
 
 Int_interval.sexp_of_t (Int_interval.create 4 3);;
-
-
-
-
 
 
 
