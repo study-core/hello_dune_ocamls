@@ -13,7 +13,7 @@ type person = {
     let show_person v = Format.asprintf "%a" pp_person v
 *)
 
-(** deriving eq - 自动生成比较函数 *)
+(** deriving eq - 自动生成比较函数（第三方库：ppx_deriving）*)
 type point = { x : int; y : int } [@@deriving eq]
 
 (** 展开后代码（ppx_deriving.eq 生成）：
@@ -21,7 +21,7 @@ type point = { x : int; y : int } [@@deriving eq]
     let equal_point lhs rhs = lhs.x = rhs.x && lhs.y = rhs.y
 *)
 
-(** deriving yojson - 自动生成 JSON 序列化 *)
+(** deriving yojson - 自动生成 JSON 序列化（第三方库：ppx_yojson_conv）*)
 type config = {
   host : string;
   port : int;
@@ -38,7 +38,7 @@ type config = {
       | _ -> failwith "invalid config JSON"
 *)
 
-(** deriving sexp - 自动生成 S-表达式序列化 *)
+(** deriving sexp - 自动生成 S-表达式序列化（第三方库：ppx_sexp_conv）*)
 type color = Red | Green | Blue | RGB of int * int * int [@@deriving sexp]
 
 (** 展开后代码（ppx_sexp_conv 生成）：
@@ -50,7 +50,7 @@ type color = Red | Green | Blue | RGB of int * int * int [@@deriving sexp]
       | RGB (r, g, b) -> Sexplib.Sexp.List [Atom "RGB"; sexp_of_int r; sexp_of_int g; sexp_of_int b]
 *)
 
-(** 组合多个 deriving *)
+(** 组合多个 deriving（第三方库：ppx_deriving）*)
 type user = {
   id : int;
   username : string;
@@ -62,7 +62,7 @@ type user = {
     type user = { id : int; username : string; email : string; active : bool; }
     let pp_user fmt v = Fmt.pf fmt "{ id = %d; username = %S; email = %S; active = %B }"
                         v.id v.username v.email v.active
-    let show_user v = Format.asprintf "%a" pp_user v
+    let show_user v = Format.asprintf "%a" pp_person v
     let equal_user lhs rhs = lhs.id = rhs.id && lhs.username = rhs.username &&
                             lhs.email = rhs.email && lhs.active = rhs.active
     let yojson_of_user {id; username; email; active} =

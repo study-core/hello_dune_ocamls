@@ -236,10 +236,10 @@ done
 
 ## 注意事项
 
-1. **官方扩展**：示例中使用了 `ppx_deriving`、`ppx_here`、`ppx_env` 等官方包提供的扩展
+1. **第三方库扩展**：示例中展示了 `ppx_deriving`、`ppx_here`、`ppx_env` 等第三方库提供的扩展语法（但未实际配置使用）
 2. **安装依赖**：
    ```bash
-   opam install ppx_deriving ppx_inline_test ppx_expect
+   opam install ppx_deriving ppx_here ppx_env ppx_inline_test ppx_expect
    opam install ppx_yojson_conv ppx_sexp_conv ppx_here ppx_env
    ```
 3. **自定义扩展**：`rewriters/` 目录中的重写器实现了自定义扩展

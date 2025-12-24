@@ -1,6 +1,6 @@
 (** % 扩展示例 - 表达式级别的实际用法 *)
 
-(** ppx_deriving.show - 值到字符串转换 *)
+(** ppx_deriving.show - 值到字符串转换（第三方库：ppx_deriving）*)
 type person = {
   name : string;
   age : int;
@@ -12,10 +12,10 @@ let person_str = [%show: person] alice
 
 (** 展开后代码（[%show: person]）：
     let person_str = show_person alice
-    (* 其中 show_person 是 [@@deriving show] 生成的函数 *)
+    (* 其中 show_person 是 ppx_deriving 库的 [@@deriving show] 生成的函数 *)
 *)
 
-(** ppx_deriving.eq - 值相等比较 *)
+(** ppx_deriving.eq - 值相等比较（第三方库：ppx_deriving）*)
 type point = { x : int; y : int } [@@deriving eq]
 let p1 = { x = 1; y = 2 }
 let p2 = { x = 1; y = 2 }
@@ -23,10 +23,10 @@ let points_equal = [%eq: point] p1 p2
 
 (** 展开后代码（[%eq: point]）：
     let points_equal = equal_point p1 p2
-    (* 其中 equal_point 是 [@@deriving eq] 生成的函数 *)
+    (* 其中 equal_point 是 ppx_deriving 库的 [@@deriving eq] 生成的函数 *)
 *)
 
-(** ppx_here - 获取源码位置信息 *)
+(** ppx_here - 获取源码位置信息（第三方库：ppx_here）*)
 let location = [%here]
 
 (** 展开后代码（[%here]）：
@@ -36,7 +36,7 @@ let location = [%here]
                      pos_cnum = ... } (* 字符位置 *)
 *)
 
-(** ppx_env - 获取环境变量 *)
+(** ppx_env - 获取环境变量（第三方库：ppx_env）*)
 let port = [%env "PORT"]
 let debug = [%env "DEBUG"]
 
