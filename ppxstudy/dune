@@ -1,0 +1,25 @@
+; PPX Study - PPX 扩展学习项目的主构建文件
+;
+; 这个文件告诉 Dune 如何构建整个项目
+; Dune 是 OCaml 的构建系统，类似于 Make
+
+; 定义一个库，包含所有自定义的 PPX 重写器
+(library
+ (name ppx_study_rewriters)        ; 库的名字
+ (libraries ppxlib)               ; 依赖 ppxlib 库
+ (preprocess (pps ppxlib.metaquot)) ; 预处理，使用 ppxlib 的元编程支持
+ (flags (:standard -linkall))     ; 编译标志，确保所有模块都被链接
+ (modules                          ; 这个库包含的模块
+  ppx_debug
+  ppx_auto
+  ppx_module_wrapper
+  ppx_regex
+  ppx_alias
+  ppx_wrapped))
+
+; 定义一个可执行文件，用于演示自定义 PPX 重写器
+(executable
+ (name custom_ppx_demo)            ; 可执行文件名字
+ (libraries ppxlib ppx_study_rewriters) ; 依赖库
+ (modules custom_ppx_demo)         ; 包含的模块
+ (preprocess (pps ppxlib.metaquot))); 预处理配置

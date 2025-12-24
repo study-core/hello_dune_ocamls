@@ -1,4 +1,4 @@
-# dune build test/monad.ml
+# dune build ppxstudy/examples/run_examples.exe
 # OCAMLPARAM: unset
 # Shared cache: enabled-except-user-rules
 # Shared cache location: /home/vrf/.cache/dune/db
@@ -13,4 +13,10 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ /home/vrf/.opam/4.08.1/bin/ocamlc.opt -config > /tmp/dune_d8e277_output
+$ /home/vrf/.opam/4.08.1/bin/ocamlc.opt -config > /tmp/dune_646d8a_output
+$ (cd _build/default && /home/vrf/.opam/4.08.1/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I ppxstudy/examples/.run_examples.eobjs/byte -I ppxstudy/examples/.run_examples.eobjs/native -I /home/vrf/.opam/4.08.1/lib/base -I /home/vrf/.opam/4.08.1/lib/base/base_internalhash_types -I /home/vrf/.opam/4.08.1/lib/base/caml -I /home/vrf/.opam/4.08.1/lib/base/md5 -I /home/vrf/.opam/4.08.1/lib/base/shadow_stdlib -I /home/vrf/.opam/4.08.1/lib/base_bigstring -I /home/vrf/.opam/4.08.1/lib/base_quickcheck -I /home/vrf/.opam/4.08.1/lib/bin_prot -I /home/vrf/.opam/4.08.1/lib/bin_prot/shape -I /home/vrf/.opam/4.08.1/lib/core -I /home/vrf/.opam/4.08.1/lib/core/error_checking_mutex -I /home/vrf/.opam/4.08.1/lib/core_kernel -I /home/vrf/.opam/4.08.1/lib/core_kernel/base_for_tests -I /home/vrf/.opam/4.08.1/lib/core_kernel/caml_unix -I /home/vrf/.opam/4.08.1/lib/core_kernel/flags -I /home/vrf/.opam/4.08.1/lib/core_kernel/version_util -I /home/vrf/.opam/4.08.1/lib/fieldslib -I /home/vrf/.opam/4.08.1/lib/jane-street-headers -I /home/vrf/.opam/4.08.1/lib/ocaml/threads -I /home/vrf/.opam/4.08.1/lib/parsexp -I /home/vrf/.opam/4.08.1/lib/ppx_assert/runtime-lib -I /home/vrf/.opam/4.08.1/lib/ppx_bench/runtime-lib -I /home/vrf/.opam/4.08.1/lib/ppx_compare/runtime-lib -I /home/vrf/.opam/4.08.1/lib/ppx_enumerate/runtime-lib -I /home/vrf/.opam/4.08.1/lib/ppx_expect/collector -I /home/vrf/.opam/4.08.1/lib/ppx_expect/common -I /home/vrf/.opam/4.08.1/lib/ppx_expect/config -I /home/vrf/.opam/4.08.1/lib/ppx_expect/config_types -I /home/vrf/.opam/4.08.1/lib/ppx_hash/runtime-lib -I /home/vrf/.opam/4.08.1/lib/ppx_here/runtime-lib -I /home/vrf/.opam/4.08.1/lib/ppx_inline_test/config -I /home/vrf/.opam/4.08.1/lib/ppx_inline_test/runtime-lib -I /home/vrf/.opam/4.08.1/lib/ppx_module_timer/runtime -I /home/vrf/.opam/4.08.1/lib/ppx_sexp_conv/runtime-lib -I /home/vrf/.opam/4.08.1/lib/sexplib -I /home/vrf/.opam/4.08.1/lib/sexplib/unix -I /home/vrf/.opam/4.08.1/lib/sexplib0 -I /home/vrf/.opam/4.08.1/lib/spawn -I /home/vrf/.opam/4.08.1/lib/splittable_random -I /home/vrf/.opam/4.08.1/lib/stdio -I /home/vrf/.opam/4.08.1/lib/time_now -I /home/vrf/.opam/4.08.1/lib/timezone -I /home/vrf/.opam/4.08.1/lib/typerep -I /home/vrf/.opam/4.08.1/lib/variantslib -intf-suffix .ml -no-alias-deps -opaque -o ppxstudy/examples/.run_examples.eobjs/native/dune__exe__Run_examples.cmx -c -impl ppxstudy/examples/run_examples.ml)
+> File "ppxstudy/examples/run_examples.ml", line 160, characters 40-41:
+> 160 |   print_endline "=" ^ String.make 50 '=');
+>                                               ^
+> Error: Syntax error
+[2]

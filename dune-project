@@ -17,10 +17,17 @@
 
 (package
  (name hello_ocamls)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml dune)
+ (synopsis "OCaml learning project with PPX extensions")
+ (description "A comprehensive OCaml learning project demonstrating PPX extensions")
+ (depends
+  ocaml
+  dune
+  ppxlib
+  core
+  ppx_deriving
+  ppx_inline_test
+  ppx_expect)
  (tags
-  (topics "to describe" your project)))
+  (topics "ocaml" "ppx" "learning" "metaprogramming")))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

@@ -1,0 +1,20 @@
+; rewriters 目录的构建配置
+;
+; 这个目录包含自定义 PPX 重写器的实现
+
+; PPX 重写器库
+(library
+ (name ppx_study_rewriters)        ; 库的名字
+ (libraries ppxlib)               ; 依赖 ppxlib
+ (preprocess (pps ppxlib.metaquot)) ; 预处理
+ (flags (:standard -linkall))     ; 编译标志
+ (modules                          ; 包含的模块
+  ppx_debug
+  ppx_auto
+  ppx_module_wrapper
+  ppx_regex
+  ppx_alias
+  ppx_wrapped
+  ppx_calc
+  ppx_log))
+

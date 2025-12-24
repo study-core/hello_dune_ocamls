@@ -1,0 +1,45 @@
+; examples 目录的构建配置
+;
+; 这个目录包含各种 PPX 扩展的示例程序
+
+; 综合演示程序 - 展示所有类型的 PPX 扩展
+(executable
+ (name run_examples)               ; 生成的可执行文件名为 run_examples.exe
+ (libraries core str)             ; 依赖 Core 和 Str 库
+ (modules run_examples))          ; 包含的源文件
+
+; % 扩展节点示例 - 表达式级别的扩展
+(executable
+ (name percent_examples)
+ (libraries core)
+ (modules percent_examples))
+
+; %% 扩展节点示例 - 结构项级别的扩展
+(executable
+ (name double_percent_examples)
+ (libraries core)
+ (modules double_percent_examples))
+
+; @ 属性节点示例 - 模式级别的扩展
+(executable
+ (name at_examples)
+ (libraries core str)
+ (modules at_examples))
+
+; @@ 属性节点示例 - 类型级别的扩展
+(executable
+ (name double_at_examples)
+ (libraries core)
+ (modules double_at_examples))
+
+; @@@ 属性节点示例 - 模块级别的扩展
+(executable
+ (name triple_at_examples)
+ (libraries core)
+ (modules triple_at_examples))
+
+; %%% 属性节点示例 - 文件级别的扩展
+(executable
+ (name triple_percent_examples)
+ (libraries core)
+ (modules triple_percent_examples))
