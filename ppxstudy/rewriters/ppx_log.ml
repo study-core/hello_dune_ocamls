@@ -12,6 +12,15 @@ open Ppxlib
     语法：[%log expression]
 
     这个扩展会在表达式执行前记录日志，然后返回表达式的值
+
+    生成的代码示例：
+    输入：  let result = [%log compute_expensive_value ()]
+
+    输出：  let result =
+            Printf.printf "➡️ [%s:%d] Entering: compute_expensive_value ()\n" __FILE__ __LINE__;
+            let result = compute_expensive_value () in
+            Printf.printf "⬅️ [%s:%d] Exiting: compute_expensive_value ()\n" __FILE__ __LINE__;
+            result
 *)
 
 let log_extension =

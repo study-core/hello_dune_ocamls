@@ -12,6 +12,17 @@ open Ppxlib
     语法：pattern @ regex "pattern"
 
     这个扩展会将正则表达式模式转换为 when 条件
+
+    生成的代码示例：
+    输入：  | _ @regex "^\\d+$" -> "number"
+    | _ @regex "^[a-zA-Z]+$" -> "letters"
+
+    输出：  | _regex_match when (try let regexp = Str.regexp "^\\d+$" in
+                                   Str.string_match regexp _regex_match 0
+                                 with _ -> false) -> "number"
+           | _regex_match when (try let regexp = Str.regexp "^[a-zA-Z]+$" in
+                                   Str.string_match regexp _regex_match 0
+                                 with _ -> false) -> "letters"
 *)
 
 let regex_extension =

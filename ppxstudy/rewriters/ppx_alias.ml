@@ -2,6 +2,14 @@
     演示如何创建类型级别的 PPX 扩展
 
     这个扩展为类型添加别名属性
+
+    注意：虽然这是@@扩展，但实际的@@扩展通常由第三方库如ppx_deriving提供。
+    ppx_deriving.show 生成的代码示例：
+    输入：  type person = { name : string; age : int } [@@deriving show]
+
+    输出：  type person = { name : string; age : int }
+           let pp_person fmt v = Fmt.pf fmt "{ name = %S; age = %d }" v.name v.age
+           let show_person v = Format.asprintf "%a" pp_person v
 *)
 
 open Ppxlib

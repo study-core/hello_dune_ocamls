@@ -12,6 +12,16 @@ open Ppxlib
     语法：module M @@@ wrapped = struct ... end
 
     这个扩展会为模块添加包装结构
+
+    生成的代码示例：
+    输入：  module Calculator @@@ wrapped = struct
+             let add x y = x + y
+           end
+
+    输出：  module Calculator = struct
+             let __wrapped_module = "wrapped"
+             let add x y = x + y
+           end
 *)
 
 let wrapped_extension =

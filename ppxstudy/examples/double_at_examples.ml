@@ -7,8 +7,19 @@ type person = {
   email : string;
 } [@@deriving show]
 
+(** 展开后代码（ppx_deriving.show 生成）：
+    type person = { name : string; age : int; email : string; }
+    let pp_person fmt v = Fmt.pf fmt "{ name = %S; age = %d; email = %S }" v.name v.age v.email
+    let show_person v = Format.asprintf "%a" pp_person v
+*)
+
 (** deriving eq - 自动生成比较函数 *)
 type point = { x : int; y : int } [@@deriving eq]
+
+(** 展开后代码（ppx_deriving.eq 生成）：
+    type point = { x : int; y : int }
+    let equal_point lhs rhs = lhs.x = rhs.x && lhs.y = rhs.y
+*)
 
 (** deriving yojson - 自动生成 JSON 序列化 *)
 type config = {
@@ -17,8 +28,27 @@ type config = {
   debug : bool;
 } [@@deriving yojson]
 
+(** 展开后代码（ppx_yojson_conv 生成）：
+    type config = { host : string; port : int; debug : bool; }
+    let yojson_of_config {host; port; debug} =
+      `Assoc [("host", `String host); ("port", `Int port); ("debug", `Bool debug)]
+    let config_of_yojson = function
+      | `Assoc [("host", `String host); ("port", `Int port); ("debug", `Bool debug)] ->
+          {host; port; debug}
+      | _ -> failwith "invalid config JSON"
+*)
+
 (** deriving sexp - 自动生成 S-表达式序列化 *)
 type color = Red | Green | Blue | RGB of int * int * int [@@deriving sexp]
+
+(** 展开后代码（ppx_sexp_conv 生成）：
+    type color = Red | Green | Blue | RGB of int * int * int
+    let sexp_of_color = function
+      | Red -> Sexplib.Sexp.Atom "Red"
+      | Green -> Sexplib.Sexp.Atom "Green"
+      | Blue -> Sexplib.Sexp.Atom "Blue"
+      | RGB (r, g, b) -> Sexplib.Sexp.List [Atom "RGB"; sexp_of_int r; sexp_of_int g; sexp_of_int b]
+*)
 
 (** 组合多个 deriving *)
 type user = {
@@ -27,6 +57,18 @@ type user = {
   email : string;
   active : bool;
 } [@@deriving show, eq, yojson]
+
+(** 展开后代码（组合多个 deriving）：
+    type user = { id : int; username : string; email : string; active : bool; }
+    let pp_user fmt v = Fmt.pf fmt "{ id = %d; username = %S; email = %S; active = %B }"
+                        v.id v.username v.email v.active
+    let show_user v = Format.asprintf "%a" pp_user v
+    let equal_user lhs rhs = lhs.id = rhs.id && lhs.username = rhs.username &&
+                            lhs.email = rhs.email && lhs.active = rhs.active
+    let yojson_of_user {id; username; email; active} =
+      `Assoc [("id", `Int id); ("username", `String username);
+              ("email", `String email); ("active", `Bool active)]
+*)
 
 (** 使用示例 *)
 let () =

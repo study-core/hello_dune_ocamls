@@ -22,8 +22,15 @@ ppxstudy/
 │   ├── ppx_auto.ml           # %%auto 扩展
 │   ├── ppx_module_wrapper.ml # %%%module_wrapper 扩展
 │   ├── ppx_regex.ml          # @regex 扩展
+│   ├── ppx_range.ml          # @range 扩展
+│   ├── ppx_is_type.ml        # @is_type 扩展
+│   ├── ppx_valid.ml          # @valid 扩展
+│   ├── ppx_formats.ml        # @json/@xml/@yaml 扩展
 │   ├── ppx_alias.ml          # @@alias 扩展
 │   ├── ppx_wrapped.ml        # @@@wrapped 扩展
+│   ├── ppx_timed.ml          # @@@timed 扩展
+│   ├── ppx_logged.ml         # @@@logged 扩展
+│   ├── ppx_cached.ml         # @@@cached 扩展
 │   ├── ppx_calc.ml           # %calc 扩展
 │   └── ppx_log.ml            # %log 扩展
 ├── dune              # 构建配置

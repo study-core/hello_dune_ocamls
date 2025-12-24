@@ -75,6 +75,13 @@ let generate_helpers_for_record ~loc type_name fields =
     语法：[%%auto type_definitions]
 
     这个扩展会为类型定义自动生成辅助函数
+
+    生成的代码示例：
+    输入：  [%%auto let greet name = Printf.printf "Hello, %s!\n" name]
+
+    输出：  let greet name = Printf.printf "Hello, %s!\n" name
+           let greet_all names = List.iter greet names  (* 自动生成的辅助函数 *)
+           let greet_default () = greet "World"         (* 自动生成的默认函数 *)
 *)
 
 let auto_extension =

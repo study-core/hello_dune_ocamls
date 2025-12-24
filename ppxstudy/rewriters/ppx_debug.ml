@@ -16,6 +16,15 @@ open Ppxlib
     2. 执行表达式
     3. 打印表达式的结果
     4. 返回结果
+
+    生成的代码示例：
+    输入：  let result = [%debug 1 + 2 + 3]
+
+    输出：  let result =
+            Printf.printf "🐛 [DEBUG] 表达式: 1 + 2 + 3\n";
+            let result = 1 + 2 + 3 in
+            Printf.printf "🐛 [DEBUG] 结果: 6\n";
+            result
 *)
 
 let debug_extension =

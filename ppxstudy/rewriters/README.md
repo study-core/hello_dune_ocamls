@@ -212,3 +212,83 @@ ocamlc -ppx './ppx_study_rewriters.exe' your_file.ml
 - 使用 `Ast_pattern` 匹配语法结构
 - 使用 `Ast_helper` 构造新的 AST
 - 使用 `metaquot` (`[%expr ...]`) 创建代码模板
+
+## @ 扩展重写器详解
+
+### ppx_regex.ml - @regex 扩展
+**功能**：在模式匹配中使用正则表达式进行字符串匹配
+
+**实现要点**：
+- 使用 `Ast_pattern.(single_expr_payload __)` 匹配正则表达式参数
+- 转换为 `Str.string_match` 调用
+- 生成带条件的模式 `Ast_helper.Pat.when_`
+
+### ppx_range.ml - @range 扩展
+**功能**：在模式匹配中使用数值范围检查
+
+**实现要点**：
+- 使用 `Ast_pattern.(pair __ __)` 匹配最小值和最大值参数
+- 生成数值比较条件 `value >= min && value <= max`
+- 支持整数和浮点数范围检查
+
+### ppx_is_type.ml - @is_type 扩展
+**功能**：在模式匹配中进行运行时类型检查
+
+**实现要点**：
+- 使用 `Obj.tag` 和 `Obj.repr` 进行运行时类型检查
+- 支持 `int`, `string`, `float`, `bool`, `list` 等基本类型
+- 批量注册多个相关扩展
+
+### ppx_valid.ml - @valid 扩展
+**功能**：在模式匹配中添加额外的验证条件
+
+**实现要点**：
+- 使用 `Ast_pattern.(single_expr_payload __)` 匹配验证表达式
+- 将验证条件转换为 `when` 子句
+- 支持任意复杂的布尔表达式作为验证条件
+
+### ppx_formats.ml - 数据格式识别扩展
+**功能**：自动识别 JSON、XML、YAML 等数据格式
+
+**实现要点**：
+- 实现简单的格式检测函数
+- 批量创建 `json`, `xml`, `yaml` 三个扩展
+- 用于数据格式的自动识别和路由
+
+## @@@ 扩展重写器详解
+
+### ppx_wrapped.ml - @@@wrapped 扩展
+**功能**：为模块添加包装结构和标识符
+
+**实现要点**：
+- 使用 `Extension.Context.module_expr` 处理模块表达式
+- 匹配 `Pmod_structure` 结构模块
+- 在模块开头添加包装标识
+- 保持原有模块功能不变
+
+### ppx_timed.ml - @@@timed 扩展
+**功能**：为模块中的所有函数添加执行时间测量
+
+**实现要点**：
+- 遍历模块的所有值绑定
+- 为每个函数包装执行时间测量逻辑
+- 使用 `Unix.gettimeofday` 计算时间差
+- 处理递归函数和异常情况
+
+### ppx_logged.ml - @@@logged 扩展
+**功能**：为模块中的所有函数添加调用日志记录
+
+**实现要点**：
+- 为函数调用和返回添加日志输出
+- 处理异常情况的日志记录
+- 使用 `Printf.printf` 进行日志输出
+- 保持函数的原有返回值
+
+### ppx_cached.ml - @@@cached 扩展
+**功能**：为模块中的纯函数添加自动结果缓存
+
+**实现要点**：
+- 为每个函数创建对应的缓存哈希表
+- 在函数调用前检查缓存
+- 缓存未命中时执行计算并存储结果
+- 使用简化的参数作为缓存键

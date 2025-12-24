@@ -16,5 +16,12 @@
   ppx_alias
   ppx_wrapped
   ppx_calc
-  ppx_log))
+  ppx_log
+  ppx_range
+  ppx_is_type
+  ppx_valid
+  ppx_formats
+  ppx_timed
+  ppx_logged
+  ppx_cached))
 

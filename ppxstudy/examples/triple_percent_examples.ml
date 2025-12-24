@@ -47,6 +47,59 @@
   let () = main ()
 }]
 
+(** 展开后代码（[%%%module_wrapper]）：
+    (* %%% 扩展会将整个代码块包装在模块中 *)
+    module WrappedModule = struct
+      type person = { name : string; age : int; email : string; }
+
+      let create_person name age email = { name; age; email; }
+
+      let greet_person p = Printf.printf "Hello, %s! You are %d years old.\n" p.name p.age
+
+      let get_person_info p = Printf.sprintf "%s (%d) - %s" p.name p.age p.email
+
+      let main () =
+        let alice = create_person "Alice" 30 "alice@example.com" in
+        let bob = create_person "Bob" 25 "bob@example.com" in
+
+        greet_person alice;
+        greet_person bob;
+
+        print_endline (get_person_info alice);
+        print_endline (get_person_info bob);
+
+        print_endline "%%% 扩展示例运行完成！"
+
+      let () = main ()
+    end
+
+    (* 然后自动添加模块打开 *)
+    open WrappedModule
+*)
+
+(** 另一个 %%% 扩展示例 *)
+[%%%auto_include {
+  (** 这个扩展会自动包含常用的模块 *)
+  open List
+  open String
+  open Printf
+
+  let hello = "Hello, World!"
+  let numbers = [1; 2; 3; 4; 5]
+}]
+
+(** 展开后代码（[%%%auto_include]）：
+    (* 自动包含指定的模块和定义 *)
+    open List
+    open String
+    open Printf
+
+    let hello = "Hello, World!"
+    let numbers = [1; 2; 3; 4; 5]
+
+    (* 然后继续文件的其他代码 *)
+*)
+
 (** ===============================================
     注意：上面的 [%%%module_wrapper {...}] 语法是概念展示。
     在真正的 %%% 扩展实现中，这段代码会被转换为：

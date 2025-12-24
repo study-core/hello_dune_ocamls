@@ -15,6 +15,18 @@ open Ppxlib
     1. 创建一个包装模块
     2. 将所有代码放入模块中
     3. 添加模块打开语句
+
+    生成的代码示例：
+    输入：  [%%%module_wrapper {
+              let x = 42
+              let add a b = a + b
+            }]
+
+    输出：  module WrappedModule = struct
+              let x = 42
+              let add a b = a + b
+            end
+            open WrappedModule
 *)
 
 let module_wrapper_extension =

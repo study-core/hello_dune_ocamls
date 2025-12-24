@@ -12,6 +12,11 @@ open Ppxlib
     语法：[%calc expression]
 
     这个扩展会计算表达式的值并替换为结果
+
+    生成的代码示例：
+    输入：  let result = [%calc 2 * (3 + 4)]
+
+    输出：  let result = 14  (* 在编译时计算出结果 *)
 *)
 
 let calc_extension =
