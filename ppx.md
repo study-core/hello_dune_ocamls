@@ -171,12 +171,10 @@ PPX 系统由三个部分组成:
 
 扩展节点是语法树中的 “洞”. 解析器在很多地方都接受它们，比如模式、表达式、核心类型或模块类型. 要判断某个位置是否允许扩展节点，你可以查看解析树，看看对应节点是否有扩展构造子. 然而，扩展节点会被编译器随后拒绝. 因此， 必须通过 PPX 重写它们才能继续编译.
 
-扩展器是一种 PPX 重写器，会用匹配的名称替换 所有扩展节点 的出现.
+(其中, 扩展器是一种 PPX 重写器，会用匹配的名称替换 所有扩展节点 的出现)
 
-1. % : 表示 内部节点 (用于替换一小部分内容), 如: 表达式 、 类型 和 模式 (级别)
-2. %% : 表示 模块顶层节点, 独立成行 (用于插入一段定义), 如: 结构/签名项 或 类字段 (级别)
-3. %%%：表示 签名 (用于声明一些东西), 如: 仅用于 .mli 接口文件或 sig ... end 块中
 
+常见的 扩展节点 用法示例:
 
 在 `*.ml` 文件中:
 
@@ -213,24 +211,165 @@ let [%ext_name? a :: _ ] = ()
 ```
 
 
+**什么时候用 %？**
+
+当你想要实现 OCaml 语言本身做不到的语法时。
+
+  例如：`let%lwt` 处理异步逻辑，它把后面的代码全部包进了回调函数里。这涉及到代码结构的重组。
 
 
 
-再如：
 
-**%**
-
-
-**%%**
+1. **%** : 表示 内部节点 (用于替换一小部分内容), 如: 表达式 、 类型 和 模式 (级别)
 
 
+```ml
+(* 表达式扩展：编译时读取环境变量 ppx_env JaneStreet 提供 *)
+(* 
+    假设执行编译时 HOME 的值是 /home/user, 展开后的代码应为:
 
-**%%%**
+        let x = "/home/user"
+ *)
+let x = [%env "HOME"]        
+
+(* 模式扩展：用于复杂的正则匹配解构   ppx_regexp 提供 *)
+(* 
+    展开后:
+
+        (* 1. PPX 自动在隐藏位置生成预编译对象 *)
+        let __ppx_regex_1 = Re.Pcre.regexp "(\\d+)"
+
+        (* 2. 原代码行会被展开为类似以下的逻辑 *)
+        let id = 
+          match Re.Pcre.exec ~rex:__ppx_regex_1 "123" with
+          | groups -> Re.Pcre.get groups 1  (* 提取第一个捕获组 *)
+          | exception Not_found ->  raise (Match_failure ("your_file.ml", line, col))
+
+*)
+let [%regex {|(\d+)|}] id = "123" 
+
+(* 类型扩展：动态生成类型 (自定义的, 需要写重写器代码) *)
+(* 
+    展开后代码依赖于自己写的重写器逻辑
+*)
+type t = [%custom_type]           
+
+
+(* 
+常见的库 :
+    ppx_expect, ppx_let, ppx_inline_test  由 JaneStreet 提供
+*)
+
+(* ppx_expect 用法 *)
+let%expect_test "addition" =
+  Printf.printf "%d" (1 + 2);
+  [%expect {| 3 |}] (* 运行 dune runtest 后，这里的 3 会自动生成或更新 *)
+
+(* 
+    它不会直接变成普通代码，而是注册到一个隐藏的测试框架中, 伪展开代码:
+
+        (* 1. 注册该测试块到全局测试表 *)
+        let () =
+          Ppx_expect_runtime.Test_block.register_test
+            ~config:Ppx_expect_config.default
+            ~file:"src/math.ml"
+            ~line:1
+            ~column:0
+            ~description:(Some "addition")
+            (fun () ->
+               (* 2. 这里的代码被包装成一个闭包 *)
+               Printf.printf "%d" (1 + 2);
+
+               (* 3. [%expect] 被转换为一个检查点 *)
+               Ppx_expect_runtime.Test_node.check_output
+                 ~pos:{ line = 3; col = 2; ... }
+                 "3" (* 这是你当前代码里写的期待值 *)
+            )
+*)
+
+(* ppx_let 用法 *)
+(* 简化 Lwt、Async 或 Result 的处理，避免深度嵌套 *)
+(* 使用 ppx_let *)
+let fetch_data () =
+  let%bind user = get_user_id () in     (* 挂起，等待用户 ID *)
+  let%bind profile = get_profile user in (* 挂起，等待个人资料 *)
+  return (Printf.sprintf "User: %s" profile)
+
+
+(* 
+    展开后:
+
+        let fetch_data () =
+          bind (get_user_id ()) (fun user ->
+            bind (get_profile user) (fun profile ->
+              return (Printf.sprintf "User: %s" profile)))
+*)
+```
+
+
+2. **%%** : 表示 模块顶层节点, 独立成行 (用于插入一段定义), 如: 结构/签名项 或 类字段 (级别)
+
+
+```ml
+(* 顶层扩展：生成一段完整的类判断逻辑 *)
+[%%js.instanceof: MyClass]        
+```
+
+
+3. **%%%**：表示 签名 (用于声明一些东西), 如: 仅用于 .mli 接口文件或 sig ... end 块中
+
+
+
+```ml
+(* *.mli 文件 *)
+
+(* 签名扩展：将外部文件的接口声明导入此处 *)
+[%%%import: "External_Module.mli"] 
+
+
+```
+
+
+
+
+*语法糖:*
+
+
+当扩展点修饰一个具体的定义块（如 `let`, `module`, `val`）时，可以使用缩写：
+
+- `let%html v = ...` 等价于 `[%%html let v = ...]`（顶层）或 `[%html let v = ... in ...]`（局部）
+
+- `val%ext_name foo : unit` 等价于 `[%%%ext_name: val foo : unit]` (mli 中??)
+
+- `match%lwt ...`, `module%js ...` 同理
+
+
+
 
 
 
 ### @ 
 
+
+
+
+
+
+**什么时候用 @？**
+
+当你的代码结构已经是合法的 OCaml，但你想要额外生成辅助工具时。
+
+    例如：`[@@deriving show]`类型定义本身已经很完美了，你只是想让插件“顺便”在下面帮写一个打印函数。
+
+
+
+
+
+**关于 deriving 与 deriving_inline**
+
+`[@@deriving]` 是隐形的：编译时生成在内存里，你看不到源码，适合保持项目整洁
+
+`[@@deriving_inline]` 是显形的：它会物理上修改你的 .ml 文件，把生成的代码直接写进去
 
 
 ```ml
@@ -247,3 +386,117 @@ type t = int [@@deriving_inline yojson]
 
 
 
+
+
+
+1. **@**：修饰 节点级别 (某个 词) ， 如：表达式 或 具体调用点
+
+
+```ml
+(* 只给 a+b 这个加法运算贴标签   编译器内置*)
+(* 
+    展开后:
+        (* 逻辑上等同于：*)
+        let sum a b = 
+        (* 编译器内部标记：此节点在内联策略中权重极高 *)
+        a + b
+*)
+let sum a b = (a + b) [@inline]  
+
+(* 性能剖析标签，标记这段代码需要计时    库 landmarks 提供 *)
+(* 
+    展开后:
+
+        let x = 
+          (* 1. 进入测量点，记录当前时间/调用栈 *)
+          Landmark.enter __landmark_node_1;
+          try
+            let __result = "hello" in
+            (* 2. 正常结束，记录时间差 *)
+            Landmark.exit __landmark_node_1;
+            __result
+          with e ->
+            (* 3. 异常结束，也要闭合计时点并重新抛出异常 *)
+            Landmark.exit __landmark_node_1;
+            raise e
+*)
+let x = "hello" [@landmark]       
+```
+
+2. **@@**：修饰整个定义，如：定义块（type, let, module, val）的末尾
+
+
+```ml
+
+(* 给整个 user 类型贴标 *)
+(* 
+    展开后:     (在内存中展开， 不会修改源代码, 等效于下面的代码)
+
+        type user = { id : int }
+
+        (* 由 ppx_deriving_show 自动插入, 生成一个格式化函数 pp_user  *)
+        let pp_user fmt { id } = 
+          Format.fprintf fmt "{ id = %d }" id
+
+        (* 由 ppx_deriving_show 自动插入, 生成一个转字符串函数 show_user  *)
+        let show_user x = 
+          Format.asprintf "%a" pp_user x
+
+*)
+type user = { id : int } [@@deriving show] 
+
+
+(* deriving_inline 的特殊性：*)
+(* 
+    展开后:     (它是生成代码到源码中，方便查阅，而不是在内存中生成)
+
+        type t = int [@@deriving_inline yojson]
+
+        (* --- 以下是自动插入的代码，受 [@@@end] 保护 --- *)
+        let t_of_yojson (json : Yojson.Safe.t) : t = 
+          match json with
+          | `Int i -> i
+          | _ -> Ppx_yojson_conv_lib.Yojson_conv_error.expected "int" json
+
+        let yojson_of_t (x : t) : Yojson.Safe.t = `Int x
+        (* --- 自动插入结束 --- *)
+
+        [@@@end]
+*)
+type t = int [@@deriving_inline yojson]
+(* ... 这里是生成的代码 ... *)
+[@@@end] 
+(*  *)
+
+```
+
+
+
+3. **@@@**：修饰整个块 或者 整个环境 (浮动属性), 独立成行 
+
+```ml
+
+(* 告诉编译器：这个文件里所有未使用的变量都不要报错 *)
+(* 
+    无代码展开,  
+*)
+[@@@warning "-32"] 
+
+(* 
+又如:
+*)
+(* 忽略整个文件里“未使用的变量”警告 *)
+[@@@warning "-27"]
+let x = 10 (* 即便 x 没被用到，也不会警告 *)
+
+(* 
+又如:
+*)
+(* [@@@]: 全局开启调试日志      JaneStreet 提供 *)
+(* 在此文件内，所有的 [%log.debug ...] 都会被展开为真实的打印逻辑 *)
+[@@@ppx_config log_level_debug]
+
+let test_function x =
+  [%log.debug "Current value of x: %d" x]; (* 此时这行代码有效 *)
+  x + 1 
+```
