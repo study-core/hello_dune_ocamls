@@ -289,7 +289,6 @@ let%expect_test "addition" =
 
 (* ppx_let 用法 *)
 (* 简化 Lwt、Async 或 Result 的处理，避免深度嵌套 *)
-(* 使用 ppx_let *)
 let fetch_data () =
   let%bind user = get_user_id () in     (* 挂起，等待用户 ID *)
   let%bind profile = get_profile user in (* 挂起，等待个人资料 *)
@@ -304,6 +303,37 @@ let fetch_data () =
             bind (get_profile user) (fun profile ->
               return (Printf.sprintf "User: %s" profile)))
 *)
+
+
+(* ppx_inline_test  用法 *)
+let add a b = a + b
+(* 编译为开发模式时执行，生产模式自动移除 *)
+(* let%test（对应 [%%test ...] 的缩写），独立成行，通常放在函数定义下方 *)
+let%test "test_add" = (add 1 2) = 3 
+(* 
+    展开后:
+
+        执行 dune build 时:
+
+        let add a b = a + b
+        (* 此处原本的 let%test 已经被彻底抹除，不产生任何机器码 *)
+
+        执行 dune runtest 时:
+
+        let add a b = a + b
+
+        (* 由 ppx_inline_test 展开生成 *)
+        let () =
+          Ppx_inline_test_lib.Runtime.register_test
+            ~config:None
+            ~descr:"test_add"        (* 上面写的测试描述 *)
+            ~def_loc:"main.ml:2:0"   (* 文件位置和行号，用于报错定位 *)
+            ~filename:"main.ml"
+            ~line_number:2
+            ~start_pos:12
+            ~end_pos:44
+            (fun () -> (add 1 2) = 3) (* 测试逻辑被包装成了匿名函数 *)
+*)
 ```
 
 
@@ -312,7 +342,54 @@ let fetch_data () =
 
 ```ml
 (* 顶层扩展：生成一段完整的类判断逻辑 *)
-[%%js.instanceof: MyClass]        
+[%%js.instanceof: MyClass]     
+
+(* 
+常见的库 :
+    Js_of_ocaml 由 OCamlPro 提供； ppx_optcomp  由 Jane Street 提供
+*)
+
+(* Js_of_ocaml  用法 *)
+(* 告诉插件：生成一个判断 JS 对象是否为全局变量 'Array' 的函数 *)
+[%%js.instanceof: Array] 
+
+
+(* 
+    展开后:
+
+        let instanceof_Array obj = 
+          (* 这里是一段由插件生成的、复杂的 JS 原始调用代码 *)
+          Js.Internal.instanceof obj (Js.Unsafe.variable "Array")
+*)
+
+(* ppx_optcomp  用法 *)
+(* 定义一个根据版本变化的变量 *)
+[%%if ocaml_version >= (5, 0, 0)]
+  (* OCaml 5.0+ 支持多核，这里可以使用 Domain 模块 *)
+  let run_parallel f = Domain.spawn f
+[%%else]
+  (* 老版本使用单核模拟 *)
+  let run_parallel f = Thread.create f ()
+[%%endif]
+
+(* 定义环境配置 *)
+[%%define DEBUG_MODE]
+
+[%%if defined DEBUG_MODE]
+  let log s = print_endline ("DEBUG: " ^ s)
+[%%else]
+  let log _ = ()
+[%%endif]
+
+
+(* 
+    展开后:
+
+    (* 假设使用的 OCaml 版本大于 5.0.0 时 *)
+    let run_parallel f = Domain.spawn f
+
+    let log s = print_endline ("DEBUG: " ^ s)
+*)
 ```
 
 
@@ -327,6 +404,9 @@ let fetch_data () =
 [%%%import: "External_Module.mli"] 
 
 
+(* 
+在最新的 OCaml 标准语法和 ppxlib（所有现代 PPX 的底层框架）规范中，完全没有 %%%（三个百分号）这种语法形式
+*)
 ```
 
 
