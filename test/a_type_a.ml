@@ -290,6 +290,9 @@ let find_min (type a) (module C : Comparable with type t = a) (lst : a list) =
   (* ... 之前的实现 ... *)
   match lst with
   | [] -> None
+                                  (* List.fold_left 的类型为： ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a *)
+                                  (* 其中 ('a -> 'b -> 'a) 为 匿名函数 (fun 累计值 某个值 -> 返回累计值) *)
+                                  (* h 为头元素值， t 为尾元素列表 *)
   | h :: t -> Some (List.fold_left (fun acc x -> if C.compare x acc < 0 then x else acc) h t)
 
 (* 运行 *)
