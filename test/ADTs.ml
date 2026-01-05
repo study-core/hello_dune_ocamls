@@ -36,7 +36,7 @@ GADTs（广义代数数据类型）是 ADTs 的一个高级扩展  （它们允�
 
 常见使用场景：
 - 状态表示：如用户状态（登录/登出）、订单状态（待支付/已支付/已发货）
-- 错误处理：Result 类型，`Ok value | Error error_message`
+- 错误处理：Result 类型，`OK value | Error error_message`
 - 枚举类型：如方向（North | South | East | West）
 - 递归数据结构：树结构、二叉树、抽象语法树（AST）
 - 消息类型：在并发编程中表示不同类型的消息
@@ -128,7 +128,6 @@ let demo () =
    2. 记录表示"和"关系
    3. 结构相同的记录类型也是不同类型
 *)
-
 (* 这里的 msg 类型是 [< `Image of 'a | `Number of int | `Text of string ] *)
 (* 该函数的签名为: [< `Image of 'a | `Number of int | `Text of string ] -> unit *)
 let handle_msg msg =
@@ -278,7 +277,8 @@ let create_person name email = { id = 2; name = name; email = email; created_at 
 (* 打印配置 *)
 let print_config config =
   Printf.printf "主机: %s, 端口: %d, 调试: %b, 超时: %.1f\n"
-    config.host config.port config.debug config.timeout
+    config.host config.port config.debug config.timeout;
+  () (* 在 OCaml 中，函数如果没有显式的返回值，编译器会推断返回最后一条表达式的值, 所以这里必须通过添加明确的 () 返回 unit 类型值 *)
 
 (* 更新端口 *)
 let update_port config new_port =
@@ -288,14 +288,9 @@ let update_port config new_port =
 let enable_debug config =
   { config with debug = true }
 
-(* ===== 类型推断和显式注解 ===== *)
 
-(*
-重要说明：当记录类型结构相同时，OCaml的类型推断会选择最后定义的类型。
-这就是为什么create_user函数的签名变成了string -> string -> person的原因。
 
-解决方案：使用显式类型注解来确保函数返回正确的类型。
-*)
+
 
 (* ===== 记录类型兼容性演示 ===== *)
 
@@ -304,17 +299,16 @@ let demo_type_compatibility () =
   let user = create_user "张三" "zhangsan@example.com" in
   let person = create_person "李四" "lisi@example.com" in
 
-(* 可以正常使用各自的类型 *)
-print_user user;
-print_person person;
-(* 以下代码如果取消注释会编译错误：
-   因为 user 和 person 类型不同，即使字段完全一样
-   print_person user;  (* 错误：user 不能当作 person 使用 *)
-   print_user person;  (* 错误：person 不能当作 user 使用 *)
-   let person_from_user = user;  (* 错误：类型不匹配 *)
-*)
-
-print_string "记录类型的关键点：即使字段完全相同，不同的类型名也表示不同的类型！\n"
+  (* 可以正常使用各自的类型 *)
+  print_user user;
+  print_person person;
+  (* 以下代码如果取消注释会编译错误：
+     因为 user 和 person 类型不同，即使字段完全一样
+     print_person user;  (* 错误：user 不能当作 person 使用 *)
+     print_user person;  (* 错误：person 不能当作 user 使用 *)
+     let person_from_user = user;  (* 错误：类型不匹配 *)
+  *)
+  ()  (* 在 OCaml 中，函数如果没有显式的返回值，编译器会推断返回最后一条表达式的值, 所以这里必须通过添加明确的 () 返回 unit 类型值 *)
 
 
 (* ===== 简单示例使用 ===== *)
@@ -324,7 +318,8 @@ let demo_user () =
   let user1 = create_user "张三" "zhangsan@example.com" in
   let user2 = update_user_name user1 "李四" in
   print_user user1;
-  print_user user2
+  print_user user2;
+  () (* 在 OCaml 中，函数如果没有显式的返回值，编译器会推断返回最后一条表达式的值, 所以这里必须通过添加明确的 () 返回 unit 类型值 *)
 
 (* 创建和使用配置 *)
 let demo_config () =
@@ -332,7 +327,8 @@ let demo_config () =
   let config2 = enable_debug config1 in
   print_config sample_config;
   print_config config1;
-  print_config config2
+  print_config config2;
+  () (* 在 OCaml 中，函数如果没有显式的返回值，编译器会推断返回最后一条表达式的值, 所以这里必须通过添加明确的 () 返回 unit 类型值 *)
 
 (*
 ========================================================================================================================
