@@ -114,7 +114,7 @@ p#set 1 2;;
 *)
 
 class point_with_print x y =
-    object (self)
+    object (self) (* 此处也可以只写 object , 因为在成员中没有用到 self# 之类的语法 *)
       inherit point x y as super (* 访问父类的名称 *)
       method print = Printf.printf "(%d, %d)\n" x y
     end;;
