@@ -172,6 +172,7 @@ class 不能使用 【类型递归定义】,
 
 
 (* 
+ 【匿名 class 的对象实例化】
     
     直接定义 object， 语法等同 class 的 = 号后面的定义
 
@@ -185,6 +186,7 @@ class 不能使用 【类型递归定义】,
     注意: 具有满足这个定义的方法 的 class 被认为是 相同的 对象类型
     ********************************************************************
 *)
+(* obj 的类型签名为： < set : int -> int -> unit > = <obj> *)
 let obj = 
   object (self)
     val mutable x = 0
@@ -196,6 +198,119 @@ let obj =
 (* - : unit = () *)
 obj#set 1 2;;
 
+
+(* 
+  如:
+
+      let obj = object method foo = "hello" method bar = 42 end
+
+      obj的类型是 < bar : int; foo : string > 
+
+
+
+*)
+
+(* 又如: *)
+
+
+      (* 直接对象 *)
+      let obj1 = object
+        method foo = "hello"
+        method bar = 42
+      end
+
+      (* 类定义 *)
+      class my_class = object
+        method foo = "hello"  
+        method bar = 42
+      end
+
+      let obj2 = new my_class
+
+      (* 检查类型 *)
+      let () = 
+        (* obj1 和 obj2 的结构相同，但类型不同 *)
+        let f (x : < foo : string; bar : int >) = x#foo ^ string_of_int x#bar in
+        
+        print_endline (f obj1);  (* 工作 *)
+        print_endline (f obj2)   (* 也工作，因为obj2的类型是子类型 *)
+
+
+(* 又如: *)
+  
+
+      (* 定义一个接受特定类型对象的函数 *)
+      let use_obj (x : < foo : string; bar : int >) = 
+        Printf.printf "%s %d\n" x#foo x#bar
+      
+      let direct_obj = object
+        method foo = "direct"
+        method bar = 1
+      end
+
+      class my_class = object
+        method foo = "class"  
+        method bar = 2
+      end
+
+      let class_obj = new my_class
+
+      let () = 
+        use_obj direct_obj;  (* ✓ 工作 *)
+        use_obj class_obj    (* ✓ 也工作 *)
+
+
+
+(* 又如: *)
+  
+  
+
+      (* 强制类型相同时会出错 *)
+      (*  直接定义方式（直接是值） *)
+      let direct_obj : < foo : string; bar : int > = object
+        method foo = "direct"
+        method bar = 1  
+      end  (* ← 这里直接就是对象本身 *)
+
+      class my_class = object
+        method foo = "class"
+        method bar = 2
+      end
+
+      let class_obj = new my_class
+
+      (* 这会编译失败，因为类型不完全匹配 *)
+      (* let same_type = (direct_obj : my_class) *)  
+      (* 
+      这是因为：
+            direct_obj 是直接对象，没有类名
+            my_class 是一个具体的类名
+      你不能强制转换一个匿名对象到一个有名字的类类型
+      即使结构相同，OCaml也不会允许这种显式类型转换，因为它们有不同的类型标识。
+      *)
+
+
+(* 要么 *)
+
+class my_class = object
+  method foo = "hello"
+  method bar = 42
+end
+
+let obj1 = new my_class
+let obj2 = new my_class    
+
+
+(* 要么 *)
+
+(* 函数方式（需要调用） *)
+let make_obj foo_val bar_val = object
+  method foo = foo_val
+  method bar = bar_val
+end
+
+let obj1 = make_obj "hello" 42  (* ← 这里是调用函数，创建对象 *)
+let obj2 = make_obj "world" 24
 
 (* 
 ********************************************************************  
