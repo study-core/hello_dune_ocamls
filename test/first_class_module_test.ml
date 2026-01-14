@@ -50,6 +50,7 @@ end
 
 
 (* 定义函数  s 入参 a 的类型是 一个 first-class module  <看上面的 a' 定义的写法，就知道 a 这里为什么写成 a : (module Arity) > *)
+(* 函数 s 的签名是: val s : (module Arity) -> (module RESULT) ，即：入参为 第一类模块 Arity， 返回值为 第一类模块 RESULT *)
 let s (a : (module Arity)) = 
 
   (* 将 first-class module a 转换回 module A   <其中 A 的签名类型为 Arity>*)
@@ -62,7 +63,7 @@ let s (a : (module Arity)) =
   (module SA : RESULT)
 
 
-(* s 函数的类型是 (module Arity) -> (module RESULT)。让我们将 s 应用于 a *)
+(* 让我们将函数 s 应用于 a ， 即 第一类模块 a 的值 传入 函数 s 中 *)
 
 (* 此处的 m 是一个 first-class module *)
 let m = s a
