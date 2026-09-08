@@ -1,5 +1,9 @@
 # hello_ocamls
 
+## PPX 学习内容
+
+PPX 的系统学习资料、展开对照和本仓库实验源码说明见 [ppxstudy/README.md](ppxstudy/README.md)。根目录的 `ppx.md` 是较早的学习笔记，遇到语法或展开差异时以 `ppxstudy/docs/` 中已校订的知识库为准。
+
 
 ## 项目配置
 
@@ -53,4 +57,3 @@ OCaml 附带两个编译器： ocamlopt 本机代码编译器和 ocamlc 字节�
 
 
 一般来说，生产可执行文件通常应使用本机代码编译器构建。
-

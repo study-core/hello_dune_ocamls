@@ -1,5 +1,8 @@
 (** % 扩展示例 - 表达式级别的实际用法 *)
 
+(** 状态：历史实验文件，当前 Dune 未启用所需 PPX；部分展开注释与真实实现不符。
+    准确信息见同目录 README.md。 *)
+
 (** ppx_deriving.show - 值到字符串转换（第三方库：ppx_deriving）*)
 type person = {
   name : string;

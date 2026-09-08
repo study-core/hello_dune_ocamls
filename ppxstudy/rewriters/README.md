@@ -1,294 +1,184 @@
-# PPX 重写器详解
+<!-- 经 Codex 整理，更新日期：2026-09-08。 -->
 
-这个目录包含了各种自定义 PPX 重写器的实现，每个重写器演示了不同类型的 PPX 扩展。
+# rewriters 源码导读
 
-## 重写器列表
+本目录是早期 ppxlib 实验代码，不是已发布的 PPX 套件。以下说明按每个 `.ml` 实际注册的 `Extension.Context` 和构造的 AST 编写；“语义等价”省略位置、卫生名字及版本相关细节。
 
-### 1. ppx_debug.ml - %debug 扩展（表达式级别）
+## 先看语法与 Context
 
-**功能**：为表达式添加调试输出功能
+`%`/`%%` 和 `@`/`@@`/`@@@` 不是从“小节点到大节点”的六级系统。前两组分别属于扩展节点与属性：
 
-**语法**：
+- expression 扩展常写 `[%debug e]`。
+- structure-item 扩展常写 `[%%auto ...]`。
+- pattern、core type、module expression 等 Context 也使用扩展节点；不能把它们改称 `@`、`@@`、`@@@` 扩展。
+- `[@attr]`、`[@@attr]`、`[@@@attr]` 是三种属性附着形式。本目录所有实现均调用 `Extension.declare`，没有一个使用 `Attribute.declare`。
+- 没有标准 `[%%%...]`。“whole-file transformation”是 Driver API 的处理范围，不是第三种百分号语法。
+
+## 表达式扩展
+
+### `ppx_debug.ml`
+
+**用法**：`let x = [%debug 1 + 2]`。
+
+**展开后（语义等价）**：先打印 `"1 + 2"`，再执行 `let result = 1 + 2`，尝试打印 result，最后返回 result。
+
+**意义与限制**：展示 `single_expr_payload` 和 metaquot。源码用 `Obj.magic` 把任意结果交给 `Printexc.to_string`，既不是通用 pretty-printer，也不安全；生产代码应接收显式打印函数或只记录源码和位置。
+
+### `ppx_calc.ml`
+
+**用法**：`let x = [%calc (2 * 7)]`。
+
+**展开后（按真实源码）**：整数常量原样返回；顶层为 `+`、`-`、`*`、`/` 的二元调用一律变成 `42`；其他表达式原样返回。因此例子得到 `let x = 42`，不是计算出的 `14`。
+
+**意义与限制**：这是 AST 匹配骨架和“占位实现”反例，不是常量求值器。若继续实现，必须递归求值、处理除零/溢出、拒绝变量及副作用，并写展开测试。
+
+### `ppx_log.ml`
+
+**用法**：`let x = [%log f ()]`。
+
+**展开后（语义等价）**：打印由 `__FILE__`、`__LINE__` 组成的位置，求值 `f ()`，以 `Obj.magic` 尝试打印结果，再返回结果。
+
+**意义与限制**：展示在表达式求值前后插入代码；结果打印与 `ppx_debug` 一样不安全，日志位置也是生成代码中的编译器内置标识，不是直接使用 expander 的 `loc` 固化出的值。
+
+## 结构项扩展
+
+### `ppx_auto.ml`
+
+**用法（注册意图）**：`[%%auto type color = Red | Green | Blue]`；不是旧说明中的 `[%%auto let greet ...]` 自动补 `greet_all`。
+
+**展开后（源码意图）**：遍历 payload；类型项试图生成 `to_string`/`of_string` 或 `get_<field>`，再保留原类型，非类型项只原样返回。
+
+**意义与限制**：展示 structure-item payload 遍历，但当前实现不可用：普通 variant 被误建成 polymorphic variant pattern，未知分支引用未绑定 `_s`，辅助定义还放在类型定义之前，多类型也会产生命名冲突。它需要重构和测试后才能启用。
+
+### `ppx_module_wrapper.ml`
+
+**用法（与 Context 一致）**：
+
 ```ocaml
-[%debug expression]
-```
-
-**示例**：
-```ocaml
-let result = [%debug 1 + 2 + 3]  (* 会打印表达式的值 *)
-```
-
-**转换结果**：
-```ocaml
-let result =
-  Printf.printf "🐛 [DEBUG] 表达式: %s\n" "1 + 2 + 3";
-  let result = 1 + 2 + 3 in
-  Printf.printf "🐛 [DEBUG] 结果: %s\n" "6";
-  result
-```
-
----
-
-### 2. ppx_calc.ml - %calc 扩展（表达式级别）
-
-**功能**：在编译时进行数学计算
-
-**语法**：
-```ocaml
-[%calc expression]
-```
-
-**示例**：
-```ocaml
-let area = [%calc 3.14 * r * r]  (* 编译时计算 *)
-```
-
-**用途**：避免运行时计算，提升性能
-
----
-
-### 3. ppx_log.ml - %log 扩展（表达式级别）
-
-**功能**：为表达式执行添加日志记录
-
-**语法**：
-```ocaml
-[%log expression]
-```
-
-**示例**：
-```ocaml
-let data = [%log load_data_from_file "input.txt"]
-```
-
-**转换结果**：
-```ocaml
-let data =
-  Printf.printf "[LOG] Executing expression at %s\n" "file.ml:42";
-  let result = load_data_from_file "input.txt" in
-  Printf.printf "[LOG] Expression result: %s\n" "<value>";
-  result
-```
-
----
-
-### 4. ppx_auto.ml - %%auto 扩展（结构项级别）
-
-**功能**：为类型定义自动生成辅助函数
-
-**语法**：
-```ocaml
-[%%auto {
-  type color = Red | Green | Blue
-  type point = { x : int; y : int }
-}]
-```
-
-**生成的代码**：
-```ocaml
-(* 为变体类型生成 *)
-let to_string = function Red -> "Red" | Green -> "Green" | Blue -> "Blue"
-let of_string = function "Red" -> Red | "Green" -> Green | "Blue" -> Blue | _ -> failwith "..."
-
-(* 为记录类型生成 *)
-let get_x r = r.x
-let get_y r = r.y
-```
-
----
-
-### 5. ppx_module_wrapper.ml - %%%module_wrapper 扩展（文件级别）
-
-**功能**：将整个文件包装在模块中
-
-**语法**：
-```ocaml
-[%%%module_wrapper {
+[%%module_wrapper
   let x = 42
-  let y = "hello"
-  let add a b = a + b
-}]
+  let add a b = a + b]
 ```
 
-**转换结果**：
+**展开后（语义等价）**：
+
 ```ocaml
 module WrappedModule = struct
   let x = 42
-  let y = "hello"
   let add a b = a + b
 end
-
 open WrappedModule
 ```
 
----
+**意义与限制**：展示一个结构项扩展返回多个结构项。它不处理“整个文件”，不支持 `.mli`，模块名固定，多个使用点会冲突。旧写法 `[%%%module_wrapper ...]` 不是标准 OCaml。
 
-### 6. ppx_regex.ml - @regex 扩展（模式级别）
+## 模式 Context 实验
 
-**功能**：在模式匹配中使用正则表达式
+以下五个文件共同存在一个结构性问题：它们声明 `Extension.Context.pattern`，却用 `Ast_helper.Pat.when_` 试图返回 `pattern when expression`。guard 属于 `case`（`pc_guard`），不是 `pattern`；当前 ppxlib API 下这些实现不能构建。正确方向是改写整个 match/function case，或让模式扩展只返回合法模式。
 
-**语法**：
-```ocaml
-match str with
-| _ when Str.string_match (Str.regexp pattern) str 0 -> "匹配"
+### `ppx_regex.ml`
+
+**用法（意图）**：匹配字符串是否满足正则表达式。
+
+**展开后（意图示意）**：`| value when Str.string_match (Str.regexp pattern) value 0 -> ...`。
+
+**意义与限制**：目标是把 DSL 变成 guard；旧 `_ @regex "..."` 不是此 `Extension.declare` 对应的标准扩展写法。正则还在每次匹配时编译，并捕获所有异常。
+
+### `ppx_range.ml`
+
+**用法（意图）**：范围上下界作为 payload。
+
+**展开后（意图示意）**：`| value when value >= min && value <= max -> ...`。
+
+**意义与限制**：目标是生成范围 guard；源码的 `pair __ __` 约束、旧 `_ @range 90 100` 写法及返回节点类型需要重新设计。上下界是闭区间，旧示例 `90..100` 与 `80..90` 会在 90 重叠。
+
+### `ppx_is_type.ml`
+
+**用法（意图）**：`is_int`、`is_string`、`is_float`、`is_bool`、`is_list` 五个无 payload 模式判断。
+
+**展开后（意图示意）**：对匹配值调用 `Obj.repr`/`Obj.tag` 后比较标签。
+
+**意义与限制**：除 guard 构造无效外，这也不是可靠的 OCaml 运行时类型检查：不同静态类型会共享运行时表示，变体、列表、字符串等不能靠这里的标签安全区分。应优先用普通代数数据类型模式匹配。
+
+### `ppx_valid.ml`
+
+**用法（意图）**：把布尔表达式变成 case guard。
+
+**展开后（意图示意）**：`| original_pattern when condition -> ...`。
+
+**意义与限制**：当前实现没有接收或保留 `original_pattern`，只生成 `_valid_match`，所以条件若引用 `name`、`age` 等原模式绑定会未绑定。应在 case 层处理模式与 guard。
+
+### `ppx_formats.ml`
+
+**用法（意图）**：`json`、`xml`、`yaml` 三个无 payload 模式判断。
+
+**展开后（意图示意）**：`| value when detect_json value -> ...` 等。
+
+**意义与限制**：除了 guard 问题，`detect_json/xml/yaml` 只定义在 PPX 进程源码里，却被生成代码以未限定名字调用，使用方不会自动得到这些运行时函数。检测逻辑也只是首尾字符启发式，不是解析器。
+
+## 类型表达式扩展
+
+### `ppx_alias.ml`
+
+**用法（与注册 Context 一致）**：概念上会是 `type t = [%alias "AliasName"]`，而不是 `type t @@ alias ...`。
+
+**展开后（按真实源码）**：字符串 payload 会在 PPX 进程打印一行后直接 `failwith`；其他 payload 也 `failwith`，没有任何成功展开。
+
+**意义与限制**：仅是 `Extension.Context.type_expr` 的未完成骨架。若目标是给类型声明添加元数据，更自然的设计通常是 `[@@alias "AliasName"]` 配合 `Attribute.declare`，或一个 deriver。
+
+## 模块表达式扩展
+
+这四个文件注册的是 `Extension.Context.module_expr`。该 Context 的扩展节点会占据模块表达式位置，例如最小形态 `module M = [%wrapped]`。旧文中的 `module M @@@ wrapped = ...` 和 `[@@@wrapped module M = ...]` 都不是这些注册规则的用法。更关键的是，`Extension.declare` 的 `Ast_pattern` 匹配 extension payload；当前四个文件用 `Ast_pattern.__` 捕获 payload 后却把它当成 `module_expr` 读取 `pmod_desc`，实现本身存在类型/设计错误，所以下面的“用法”都是目标 API 草图而非当前可运行语法。
+
+### `ppx_wrapped.ml`
+
+**用法（设计意图）**：用扩展包装一个 `struct ... end` 模块表达式；实现时应先为 payload 规定可解析编码，或改用适合 `module%wrapped ...` 的 structure-item 规则。
+
+**展开后（语义等价）**：对 `struct ... end` 在最前面插入 `let __wrapped_module = "wrapped"`；非 structure 模块表达式原样返回。
+
+**意义与限制**：最小的 module-expression 改写示例。固定标识符可能与用户代码冲突，生产实现应生成卫生名字或明确定义公共接口。
+
+### `ppx_timed.ml`
+
+**用法（设计意图）**：包装一个包含 `let f x = body` 的结构模块。
+
+**展开后（源码意图）**：在每个简单变量值绑定的最外层 `fun` 函数体周围调用 `Unix.gettimeofday`，打印成功或异常耗时。
+
+**意义与限制**：只拆一层 curried function，所以 `let f x y = ...` 实际只计量“给定 x 后创建闭包”；它把递归绑定重建为 `Nonrecursive`，会破坏递归和互递归。生成代码还要求使用方链接 `unix`。
+
+### `ppx_logged.ml`
+
+**用法（设计意图）**：包装一个包含 `let f x = body` 的结构模块。
+
+**展开后（源码意图）**：在最外层函数体前打印 called，成功后打印 returned，异常时打印 raised；非函数表达式在初始化时打印 executed。
+
+**意义与限制**：同样只处理一层参数，并丢失 `rec_flag`、值绑定属性和复杂模式语义；递归函数会被破坏。
+
+### `ppx_cached.ml`
+
+**用法（设计意图）**：包装一个包含 `let f x = body` 的结构模块。
+
+**展开后（源码意图）**：为简单值绑定增加 `f_cache = Hashtbl.create 16`，查询失败后计算并写入。
+
+**意义与限制**：当前代码把 pattern 当 expression 反引用来构造 key，无法正确编译；同时丢失递归性，只处理一层参数，并假定任意输入可安全哈希、函数纯且结果可永久缓存。旧 README 展示的按 `x` 缓存不是当前 AST 的可靠结果。
+
+## 构建与验证
+
+基础依赖：
+
+```sh
+opam install dune ppxlib
+eval "$(opam env)"
+dune build ppxstudy/rewriters/ppx_study_rewriters.cma
 ```
 
-**概念示例**：
-```ocaml
-match str with
-| _ @ regex "^\\d+$" -> "数字"
-| _ @ regex "^[a-zA-Z]+$" -> "字母"
-| _ -> "其他"
+当前快照预计会在上述模式 guard 等实验代码处失败；这正是本页标注限制的原因。修复一个 rewriter 后，使用方还应显式启用并链接生成代码所需运行时库：
+
+```lisp
+(executable
+ (name demo)
+ (libraries str unix)
+ (preprocess (pps ppx_study_rewriters)))
 ```
 
----
-
-### 7. ppx_alias.ml - @@alias 扩展（类型级别）
-
-**功能**：为类型添加别名属性
-
-**语法**：
-```ocaml
-type person @@ alias "Person" = {
-  name : string;
-  age : int;
-}
-```
-
-**用途**：类型系统集成、元数据记录
-
----
-
-### 8. ppx_wrapped.ml - @@@wrapped 扩展（模块级别）
-
-**功能**：为模块添加包装功能
-
-**语法**：
-```ocaml
-module Calculator [@@@wrapped] = struct
-  let add x y = x + y
-end
-```
-
-**转换结果**：
-```ocaml
-module Calculator = struct
-  let __wrapped_module = "wrapped"
-  let add x y = x + y
-end
-```
-
-## 编译和使用
-
-### 构建重写器
-
-```bash
-dune build ppxstudy/rewriters
-```
-
-### 使用重写器
-
-```bash
-# 编译时使用
-ocamlc -ppx './ppx_study_rewriters.exe' your_file.ml
-
-# 或在 dune 中配置
-(preprocess (pps ppx_study_rewriters))
-```
-
-## 学习重点
-
-1. **表达式级别扩展** (`%`)：处理单个表达式
-2. **结构项级别扩展** (`%%`)：处理顶层声明
-3. **文件级别扩展** (`%%%`)：处理整个文件
-4. **模式级别扩展** (`@`)：增强模式匹配
-5. **类型级别扩展** (`@@`)：处理类型定义
-6. **模块级别扩展** (`@@@`)：处理模块定义
-
-## 实现要点
-
-- 使用 `Extension.declare` 注册扩展
-- 指定扩展上下文（`Extension.Context.*`）
-- 使用 `Ast_pattern` 匹配语法结构
-- 使用 `Ast_helper` 构造新的 AST
-- 使用 `metaquot` (`[%expr ...]`) 创建代码模板
-
-## @ 扩展重写器详解
-
-### ppx_regex.ml - @regex 扩展
-**功能**：在模式匹配中使用正则表达式进行字符串匹配
-
-**实现要点**：
-- 使用 `Ast_pattern.(single_expr_payload __)` 匹配正则表达式参数
-- 转换为 `Str.string_match` 调用
-- 生成带条件的模式 `Ast_helper.Pat.when_`
-
-### ppx_range.ml - @range 扩展
-**功能**：在模式匹配中使用数值范围检查
-
-**实现要点**：
-- 使用 `Ast_pattern.(pair __ __)` 匹配最小值和最大值参数
-- 生成数值比较条件 `value >= min && value <= max`
-- 支持整数和浮点数范围检查
-
-### ppx_is_type.ml - @is_type 扩展
-**功能**：在模式匹配中进行运行时类型检查
-
-**实现要点**：
-- 使用 `Obj.tag` 和 `Obj.repr` 进行运行时类型检查
-- 支持 `int`, `string`, `float`, `bool`, `list` 等基本类型
-- 批量注册多个相关扩展
-
-### ppx_valid.ml - @valid 扩展
-**功能**：在模式匹配中添加额外的验证条件
-
-**实现要点**：
-- 使用 `Ast_pattern.(single_expr_payload __)` 匹配验证表达式
-- 将验证条件转换为 `when` 子句
-- 支持任意复杂的布尔表达式作为验证条件
-
-### ppx_formats.ml - 数据格式识别扩展
-**功能**：自动识别 JSON、XML、YAML 等数据格式
-
-**实现要点**：
-- 实现简单的格式检测函数
-- 批量创建 `json`, `xml`, `yaml` 三个扩展
-- 用于数据格式的自动识别和路由
-
-## @@@ 扩展重写器详解
-
-### ppx_wrapped.ml - @@@wrapped 扩展
-**功能**：为模块添加包装结构和标识符
-
-**实现要点**：
-- 使用 `Extension.Context.module_expr` 处理模块表达式
-- 匹配 `Pmod_structure` 结构模块
-- 在模块开头添加包装标识
-- 保持原有模块功能不变
-
-### ppx_timed.ml - @@@timed 扩展
-**功能**：为模块中的所有函数添加执行时间测量
-
-**实现要点**：
-- 遍历模块的所有值绑定
-- 为每个函数包装执行时间测量逻辑
-- 使用 `Unix.gettimeofday` 计算时间差
-- 处理递归函数和异常情况
-
-### ppx_logged.ml - @@@logged 扩展
-**功能**：为模块中的所有函数添加调用日志记录
-
-**实现要点**：
-- 为函数调用和返回添加日志输出
-- 处理异常情况的日志记录
-- 使用 `Printf.printf` 进行日志输出
-- 保持函数的原有返回值
-
-### ppx_cached.ml - @@@cached 扩展
-**功能**：为模块中的纯函数添加自动结果缓存
-
-**实现要点**：
-- 为每个函数创建对应的缓存哈希表
-- 在函数调用前检查缓存
-- 缓存未命中时执行计算并存储结果
-- 使用简化的参数作为缓存键
+生产化顺序建议：先单独保留一个最小扩展，使用 `Extension.V3.declare`、`Ast_builder` 和唯一命名空间；再添加展开快照、错误位置、求值次数/顺序、异常路径和组合顺序测试。完整骨架见[自定义实现知识库](../docs/PPX-自定义实现-由Codex生成.md)。

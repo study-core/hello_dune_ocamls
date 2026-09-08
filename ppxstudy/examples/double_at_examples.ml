@@ -1,5 +1,8 @@
 (** @@ 扩展示例 - 类型级别的实际用法 *)
 
+(** 状态：deriving 属性的生态示例；当前 Dune 未声明所需 providers。
+    准确依赖和展开说明见同目录 README.md。 *)
+
 (** deriving show - 自动生成显示函数 *)
 type person = {
   name : string;

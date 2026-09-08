@@ -1,5 +1,7 @@
 # 预处理器扩展 (Pre-Processor eXtension)
 
+> 注意：这是较早的学习笔记，正文仍保留部分待校订的概念示例。尤其不要把 `%`、`%%`、`@`、`@@`、`@@@` 理解为互斥“级别”；`%%%` 不是 OCaml 标准扩展语法，`@` 属性也不只用于模式。请以 [ppxstudy 知识库](ppxstudy/README.md) 和 [展开对照](ppxstudy/docs/PPX-展开对照-由Codex生成.md) 为准。
+
 
 OCaml 的编译器 ocamlc 和 ocamlopt 在编译阶段提供 -pp 选项来预处理文件（但请记住，建议使用 Dune 来驱动预处理）
 

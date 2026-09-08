@@ -2,6 +2,11 @@
 ;
 ; 这个目录包含各种 PPX 扩展的示例程序
 
+; 最小可运行示例：仅使用编译器属性，不依赖第三方 PPX
+(executable
+ (name basic_attributes)
+ (modules basic_attributes))
+
 ; 综合演示程序 - 展示所有类型的 PPX 扩展
 (executable
  (name run_examples)               ; 生成的可执行文件名为 run_examples.exe

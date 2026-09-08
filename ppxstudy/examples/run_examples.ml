@@ -1,5 +1,8 @@
 (** PPX 扩展综合示例 - 实际代码用法 *)
 
+(** 状态：历史汇总文件，当前 Dune 未启用所需 PPX，不能直接运行。
+    请先运行 basic_attributes.exe，并阅读同目录 README.md。 *)
+
 (** % 扩展：表达式级别扩展点 *)
 type person = {
   name : string;

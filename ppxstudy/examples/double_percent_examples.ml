@@ -1,5 +1,8 @@
 (** %% 扩展示例 - 结构项级别的实际用法 *)
 
+(** 状态：历史实验文件，扩展来自不同 provider，当前 Dune 未启用它们。
+    准确信息见同目录 README.md。 *)
+
 (** 内联测试 *)
 [%%test "addition" = 1 + 1 = 2]
 [%%test "string ops" = String.length "hello" = 5]
